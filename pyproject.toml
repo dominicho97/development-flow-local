@@ -1,6 +1,14 @@
 [project]
 name = "development-flow-local"
 version = "0.1.0"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = []
 
+[tool.uv]
+add-bounds = "major"
+exclude-newer = "7 days"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1,<10.0.0",
+]
