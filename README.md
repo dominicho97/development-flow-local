@@ -14,6 +14,7 @@
 - Added the sample input at `dataset/raw/products.csv`.
 - Added ingestion tests; the current test suite passes all 4 tests.
 - Added `AGENTS.md` with project conventions for future development.
+- Added GitHub Actions CI for pull requests targeting `main`.
 
 The current ingestion stage validates the CSV structure and displays the raw
 dataframe. Data normalization and business-rule validation can be added in the
@@ -32,6 +33,8 @@ next stage.
   and validate required columns.
 - **Dataframe inspection:** Added a CLI that prints the loaded dataframe.
 - **Custom input files:** The ingestion CLI accepts an optional CSV path.
+- **Pull request CI:** GitHub Actions installs locked uv dependencies and runs
+  pytest and Ruff checks automatically.
 
 ### Issues fixed
 
@@ -42,6 +45,7 @@ next stage.
   ingestion module reliably.
 - Added automated ingestion tests covering valid input, missing files, missing
   columns, and malformed CSV data.
+- Added `.github/workflows/ci.yml` for automated testing and linting.
 
 ## Delivery workflow
 
@@ -62,6 +66,23 @@ The current feature has been merged into `main`. The feature branch is being
 kept intentionally for learning and reference, so it should not be deleted after
 merge. Future work should use a new feature branch created from the latest
 `main`.
+
+## Continuous integration
+
+The workflow in `.github/workflows/ci.yml` runs on pull requests targeting
+`main`. It uses Python 3.12 and uv, installs dependencies from the committed
+lockfile, and runs:
+
+```powershell
+uv sync --locked --dev
+uv run python -m pytest -v
+uv run ruff check .
+uv run ruff format --check .
+```
+
+The workflow grants the job read-only repository contents permission. Check the
+pull request's **Checks** tab or the repository's **Actions** tab to review the
+CI result.
 
 ## Development setup
 
