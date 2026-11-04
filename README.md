@@ -47,14 +47,21 @@ next stage.
 
 Use this checklist when implementing a feature or fixing an issue:
 
-- [ ] Create an issue describing the feature or problem.
-- [ ] Create and publish a feature branch.
-- [ ] Implement the change and update documentation.
-- [ ] Run the test suite and relevant checks.
-- [ ] Commit and push the changes.
-- [ ] Create a pull request.
-- [ ] Review the code changes.
-- [ ] Merge the pull request into `main`.
+- [x] Create an issue describing the feature or problem.
+- [x] Create and publish a feature branch.
+- [x] Implement the change and update documentation.
+- [x] Run the test suite and relevant checks.
+- [x] Commit and push the changes.
+- [x] Create a pull request.
+- [x] Review the code changes.
+- [x] Merge the pull request into `main`.
+
+### Current delivery status
+
+The current feature has been merged into `main`. The feature branch is being
+kept intentionally for learning and reference, so it should not be deleted after
+merge. Future work should use a new feature branch created from the latest
+`main`.
 
 ## Development setup
 
