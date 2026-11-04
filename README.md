@@ -26,6 +26,18 @@ uv run python --version
 uv run python your_script.py
 ```
 
+Load and print the default product dataset:
+
+```powershell
+uv run python src\ingestion.py
+```
+
+To load a different CSV:
+
+```powershell
+uv run python src\ingestion.py path\to\products.csv
+```
+
 Add dependencies with uv:
 
 ```powershell
