@@ -1,5 +1,61 @@
 # development-flow-local
 
+## Progress so far
+
+- Set up uv as the project’s only Python and dependency workflow.
+- Pinned the supported Python version to 3.12 with `.python-version` and
+  `requires-python = ">=3.12,<3.13"`.
+- Added pandas as a runtime dependency and pytest and Ruff as development
+  dependencies.
+- Added `uv.lock` with seven-day `exclude-newer` resolution and major-version
+  bounds for dependencies added with `uv add`.
+- Added `src/ingestion.py` with CSV loading and required-column validation.
+- Added a command-line entry point that prints the loaded dataframe.
+- Added the sample input at `dataset/raw/products.csv`.
+- Added ingestion tests; the current test suite passes all 4 tests.
+- Added `AGENTS.md` with project conventions for future development.
+
+The current ingestion stage validates the CSV structure and displays the raw
+dataframe. Data normalization and business-rule validation can be added in the
+next stage.
+
+## Issues and features implemented
+
+### Features
+
+- **UV-based project setup:** Python, virtual environments, dependencies, and
+  lockfiles are managed through uv.
+- **Pinned Python runtime:** The project uses Python 3.12.
+- **Dependency reproducibility:** Added `uv.lock`, major dependency bounds, and
+  a seven-day `exclude-newer` window.
+- **CSV ingestion:** Added `load_products()` to read UTF-8 CSV files as strings
+  and validate required columns.
+- **Dataframe inspection:** Added a CLI that prints the loaded dataframe.
+- **Custom input files:** The ingestion CLI accepts an optional CSV path.
+
+### Issues fixed
+
+- Replaced the invalid `print(pd.df)` statement with printing the loaded local
+  dataframe.
+- Added a `main()` entry point so running `src\ingestion.py` performs ingestion.
+- Added `src\__init__.py` and pytest path configuration so tests can import the
+  ingestion module reliably.
+- Added automated ingestion tests covering valid input, missing files, missing
+  columns, and malformed CSV data.
+
+## Delivery workflow
+
+Use this checklist when implementing a feature or fixing an issue:
+
+- [ ] Create an issue describing the feature or problem.
+- [ ] Create and publish a feature branch.
+- [ ] Implement the change and update documentation.
+- [ ] Run the test suite and relevant checks.
+- [ ] Commit and push the changes.
+- [ ] Create a pull request.
+- [ ] Review the code changes.
+- [ ] Merge the pull request into `main`.
+
 ## Development setup
 
 This project uses [uv](https://docs.astral.sh/uv/) for Python version management,
@@ -24,6 +80,18 @@ Run Python commands through uv:
 ```powershell
 uv run python --version
 uv run python your_script.py
+```
+
+Load and print the default product dataset:
+
+```powershell
+uv run python src\ingestion.py
+```
+
+To load a different CSV:
+
+```powershell
+uv run python src\ingestion.py path\to\products.csv
 ```
 
 Add dependencies with uv:
