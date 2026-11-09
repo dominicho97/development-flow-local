@@ -16,7 +16,7 @@
 - Added price normalization for decimal commas, euro symbols, missing values,
   and invalid text.
 - Added the sample input at `dataset/raw/products.csv`.
-- Added ingestion and transformation tests; the current suite contains 13 tests.
+- Added ingestion and transformation tests; the current suite contains 29 tests.
 - Added `AGENTS.md` with project conventions for future development.
 - Added GitHub Actions CI for pull requests targeting `main`.
 
@@ -43,6 +43,9 @@ and a complete pipeline are still planned.
 - **Price normalization:** Added `clean_price()` and integrated it into
   `clean_products()` so supported price strings become numeric values and
   missing or invalid values become missing values.
+- **Date normalization:** Added `clean_date()` and integrated it into
+  `clean_products()` to support the dataset's mixed date formats, remove
+  time-of-day values, and convert invalid dates to missing values.
 - **Pull request CI:** GitHub Actions installs locked uv dependencies and runs
   pytest and Ruff checks automatically.
 
@@ -56,7 +59,8 @@ and a complete pipeline are still planned.
 - Added automated ingestion tests covering valid input, missing files, missing
   columns, and malformed CSV data.
 - Added transformation tests covering whitespace trimming, category cleanup,
-  price formats, missing prices, and invalid price text.
+  price formats, missing prices, invalid price text, stock quantities, and
+  date formats.
 - Added `.github/workflows/ci.yml` for automated testing and linting.
 
 ## Delivery workflow
@@ -173,5 +177,7 @@ uv sync
 - Add output persistence for cleaned data.
 - Add business-rule validation for required values, dates, quantities, prices,
   currencies, and duplicate product identifiers.
+- Add explicit validation reporting so invalid dates and other rejected values
+  are retained as traceable data-quality issues.
 - Expand normalization beyond the currently supported category and price
   variants.

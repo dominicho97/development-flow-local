@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from src.transformation import clean_price, clean_products, clean_stock
+from src.transformation import clean_date, clean_price, clean_products, clean_stock
 
 
 def test_clean_products_removes_whitespace():
@@ -88,3 +88,44 @@ def test_clean_products_normalizes_stock():
     assert cleaned["stock_qty"].iloc[2] == 38
     assert pd.isna(cleaned["stock_qty"].iloc[3])
     assert str(cleaned["stock_qty"].dtype) == "Int64"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("2026-10-21", pd.Timestamp("2026-10-21")),
+        ("01/11/2026", pd.Timestamp("2026-11-01")),
+        ("2026/10/29", pd.Timestamp("2026-10-29")),
+        ("2026-11-02T08:12:00", pd.Timestamp("2026-11-02")),
+        ("", None),
+        ("2026-13-01", None),
+        ("2026-02-30", None),
+    ],
+)
+def test_clean_date(raw, expected):
+    result = clean_date(raw)
+
+    if expected is None:
+        assert result is None
+    else:
+        assert result == expected
+
+
+def test_clean_products_normalizes_dates():
+    raw = pd.DataFrame(
+        {
+            "category": ["Beverages"] * 3,
+            "last_seen": [
+                "2026-10-21",
+                "2026-11-02T08:12:00",
+                "2026-02-30",
+            ],
+        }
+    )
+
+    cleaned = clean_products(raw)
+
+    assert cleaned.loc[0, "last_seen"] == pd.Timestamp("2026-10-21")
+    assert cleaned.loc[1, "last_seen"] == pd.Timestamp("2026-11-02")
+    assert pd.isna(cleaned.loc[2, "last_seen"])
+    assert str(cleaned["last_seen"].dtype) == "datetime64[ns]"

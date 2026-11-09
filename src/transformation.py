@@ -27,6 +27,10 @@ def clean_products(df: pd.DataFrame) -> pd.DataFrame:
     if "stock_qty" in cleaned.columns:
         cleaned["stock_qty"] = cleaned["stock_qty"].map(clean_stock).astype("Int64")
 
+    # Normalize dates and discard time-of-day values
+    if "last_seen" in cleaned.columns:
+        cleaned["last_seen"] = cleaned["last_seen"].map(clean_date)
+
     return cleaned
 
 
@@ -56,3 +60,26 @@ def clean_stock(value: str) -> int | None:
         return None
 
     return quantity if quantity >= 0 else None
+
+
+def clean_date(value: str | pd.Timestamp | None) -> pd.Timestamp | None:
+    """Convert supported date strings to normalized pandas timestamps."""
+
+    if value is None or pd.isna(value):
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    parsed = pd.to_datetime(
+        text,
+        errors="coerce",
+        dayfirst=True,
+        format="mixed",
+    )
+
+    if pd.isna(parsed):
+        return None
+
+    return parsed.normalize()
