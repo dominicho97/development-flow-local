@@ -19,9 +19,14 @@ def clean_products(df: pd.DataFrame) -> pd.DataFrame:
         }
     )
 
-    # apply clean_price function
+    # apply clean_price function (normalize price)
     if "listed_price" in cleaned.columns:
         cleaned["listed_price"] = cleaned["listed_price"].map(clean_price)
+
+        # apply clean_stock function (normalize stock quantity)
+    if "stock_qty" in cleaned.columns:
+        cleaned["stock_qty"] = cleaned["stock_qty"].map(clean_stock).astype("Int64")
+
     return cleaned
 
 
@@ -37,3 +42,17 @@ def clean_price(value: str) -> float | None:
         return float(value)
     except ValueError:
         return None
+
+
+def clean_stock(value: str) -> int | None:
+    # Convert a raw stock quantity into a non-negative integer.
+    # example: ["35", "N/A", " 38 ", "-5"] to [35, <NA>, 38, <NA>]
+
+    value = value.strip()
+
+    try:
+        quantity = int(value)
+    except ValueError:
+        return None
+
+    return quantity if quantity >= 0 else None

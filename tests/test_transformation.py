@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from src.transformation import clean_price, clean_products
+from src.transformation import clean_price, clean_products, clean_stock
 
 
 def test_clean_products_removes_whitespace():
@@ -52,3 +52,39 @@ def test_clean_products_normalizes_prices():
     assert cleaned.loc[0, "listed_price"] == 12.99
     assert cleaned.loc[1, "listed_price"] == 5.49
     assert pd.isna(cleaned.loc[2, "listed_price"])
+
+
+# test clean_stock function with various inputs and expected outputs
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("35", 35),
+        (" 38 ", 38),
+        ("0", 0),
+        ("N/A", None),
+        ("", None),
+        ("invalid", None),
+        ("-5", None),
+        ("3.5", None),
+    ],
+)
+def test_clean_stock(raw, expected):
+    assert clean_stock(raw) == expected
+
+
+# test if the clean_products function uses clean_stock to normalize the stock_qty column
+def test_clean_products_normalizes_stock():
+    raw = pd.DataFrame(
+        {
+            "category": ["Rice & Noodles"] * 4,
+            "stock_qty": ["35", "N/A", " 38 ", "-5"],
+        }
+    )
+
+    cleaned = clean_products(raw)
+
+    assert cleaned["stock_qty"].tolist()[0] == 35
+    assert pd.isna(cleaned["stock_qty"].iloc[1])
+    assert cleaned["stock_qty"].iloc[2] == 38
+    assert pd.isna(cleaned["stock_qty"].iloc[3])
+    assert str(cleaned["stock_qty"].dtype) == "Int64"
