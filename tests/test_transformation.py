@@ -20,6 +20,7 @@ def test_clean_products_removes_whitespace():
     assert cleaned.loc[0, "category"] == "Rice & Noodles"
 
 
+# pytest decoratator to run the test with multiple inputs and expected outputs
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
@@ -34,3 +35,20 @@ def test_clean_products_removes_whitespace():
 )
 def test_clean_price(raw, expected):
     assert clean_price(raw) == expected
+
+
+# test if the clean_products function uses clean_price to normalize the listed_price column
+def test_clean_products_normalizes_prices():
+    raw = pd.DataFrame(
+        {
+            "sku": ["SYN-0001", "SYN-0002", "SYN-0003"],
+            "category": ["Rice & Noodles", "Beverages", "Rice & Noodles"],
+            "listed_price": ["€12,99", "5.49", "N/A"],
+        }
+    )
+
+    cleaned = clean_products(raw)
+
+    assert cleaned.loc[0, "listed_price"] == 12.99
+    assert cleaned.loc[1, "listed_price"] == 5.49
+    assert pd.isna(cleaned.loc[2, "listed_price"])
