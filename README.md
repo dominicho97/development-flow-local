@@ -10,15 +10,20 @@
 - Added `uv.lock` with seven-day `exclude-newer` resolution and major-version
   bounds for dependencies added with `uv add`.
 - Added `src/ingestion.py` with CSV loading and required-column validation.
-- Added a command-line entry point that prints the loaded dataframe.
+- Added a command-line entry point that loads and previews the raw dataframe.
+- Added `src/transformation.py` with in-memory product cleaning helpers.
+- Added string trimming and category standardization for product data.
+- Added price normalization for decimal commas, euro symbols, missing values,
+  and invalid text.
 - Added the sample input at `dataset/raw/products.csv`.
-- Added ingestion tests; the current test suite passes all 4 tests.
+- Added ingestion and transformation tests; the current suite contains 65 tests.
 - Added `AGENTS.md` with project conventions for future development.
 - Added GitHub Actions CI for pull requests targeting `main`.
 
-The current ingestion stage validates the CSV structure and displays the raw
-dataframe. Data normalization and business-rule validation can be added in the
-next stage.
+The ingestion stage validates the CSV structure and displays a preview of the
+raw dataframe. The transformation stage is currently exposed as Python
+functions rather than a CLI or persisted output step. Business-rule validation
+and a complete pipeline are still planned.
 
 ## Issues and features implemented
 
@@ -33,6 +38,19 @@ next stage.
   and validate required columns.
 - **Dataframe inspection:** Added a CLI that prints the loaded dataframe.
 - **Custom input files:** The ingestion CLI accepts an optional CSV path.
+- **Product cleaning:** Added `clean_products()` to copy a dataframe, trim
+  whitespace in string columns, and standardize selected category variants.
+- **Price normalization:** Added `clean_price()` and integrated it into
+  `clean_products()` so supported price strings become numeric values and
+  missing or invalid values become missing values.
+- **Date normalization:** Added `clean_date()` and integrated it into
+  `clean_products()` to support the dataset's mixed date formats, remove
+  time-of-day values, and convert invalid dates to missing values.
+- **Categorical normalization:** Added normalization for category aliases,
+  country names/codes, currency codes, and common active-status values.
+- **Duplicate handling:** Added `deduplicate_products()` to select the latest
+  observation for each valid SKU while returning all duplicate rows in an
+  audit dataframe with the selected row marked.
 - **Pull request CI:** GitHub Actions installs locked uv dependencies and runs
   pytest and Ruff checks automatically.
 
@@ -45,6 +63,10 @@ next stage.
   ingestion module reliably.
 - Added automated ingestion tests covering valid input, missing files, missing
   columns, and malformed CSV data.
+- Added transformation tests covering whitespace trimming, category cleanup,
+  price formats, missing prices, invalid price text, stock quantities, and
+  date formats, countries, currencies, active-status values, invalid-value
+  handling, and duplicate SKU selection.
 - Added `.github/workflows/ci.yml` for automated testing and linting.
 
 ## Delivery workflow
@@ -110,7 +132,7 @@ uv run python --version
 uv run python your_script.py
 ```
 
-Load and print the default product dataset:
+Load and preview the default product dataset:
 
 ```powershell
 uv run python src\ingestion.py
@@ -121,6 +143,18 @@ To load a different CSV:
 ```powershell
 uv run python src\ingestion.py path\to\products.csv
 ```
+
+Use the transformation helpers from Python code:
+
+```python
+from src.ingestion import load_products
+from src.transformation import clean_products
+
+raw = load_products("dataset/raw/products.csv")
+cleaned = clean_products(raw)
+```
+
+`clean_products()` returns a new dataframe; it does not write a cleaned CSV.
 
 Add dependencies with uv:
 
@@ -142,3 +176,14 @@ intentionally with:
 uv lock
 uv sync
 ```
+
+## Current limitations and next steps
+
+- Add a pipeline entry point that runs ingestion and transformation together.
+- Add output persistence for cleaned data.
+- Add explicit validation reporting so invalid dates and other rejected values
+  are retained as traceable data-quality issues.
+- Extend duplicate handling to duplicate `record_id` values and define the
+  business rule for conflicting observations with missing timestamps.
+- Expand normalization beyond the currently supported category and price
+  variants.
