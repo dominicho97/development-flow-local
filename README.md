@@ -46,7 +46,14 @@ Preview another CSV:
 uv run python src\ingestion.py path\to\products.csv
 ```
 
-Use the cleaning functions from Python:
+Use the cleaning functions from a Python session. Start the uv-managed Python
+REPL first:
+
+```powershell
+uv run python
+```
+
+Then paste this Python code at the `>>>` prompt:
 
 ```python
 from src.ingestion import load_products
@@ -55,7 +62,12 @@ from src.transformation import clean_products, deduplicate_products
 raw = load_products("dataset/raw/products.csv")
 cleaned = clean_products(raw)
 latest, duplicates = deduplicate_products(cleaned)
+print(f"Loaded: {len(raw)}; latest: {len(latest)}; duplicates: {len(duplicates)}")
 ```
+
+Do not paste the Python block directly into PowerShell. To run it as a script,
+save it as a `.py` file in the repository and execute it with `uv run python
+path\to\your_script.py`.
 
 `clean_products()` returns a new dataframe. The functions do not persist output
 files; `duplicates` is returned separately so duplicate observations are not
