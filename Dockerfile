@@ -2,6 +2,8 @@ ARG AIRFLOW_VERSION=3.4.0
 ARG PYTHON_VERSION=3.12
 ARG UV_VERSION=0.13.7
 
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+
 FROM apache/airflow:${AIRFLOW_VERSION}-python${PYTHON_VERSION}
 
 ARG AIRFLOW_VERSION
@@ -10,7 +12,7 @@ ENV AIRFLOW_HOME=/opt/airflow
 ENV PYTHONPATH=/opt/airflow/project
 
 # Copy the official uv binary into the Airflow image.
-COPY --from=ghcr.io/astral-sh/uv:${UV_VERSION} /uv /uvx /usr/local/bin/
+COPY --from=uv /uv /uvx /usr/local/bin/
 
 WORKDIR /opt/airflow/project
 
