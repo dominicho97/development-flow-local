@@ -16,7 +16,7 @@
 - Added price normalization for decimal commas, euro symbols, missing values,
   and invalid text.
 - Added the sample input at `dataset/raw/products.csv`.
-- Added ingestion and transformation tests; the current suite contains 29 tests.
+- Added ingestion and transformation tests; the current suite contains 65 tests.
 - Added `AGENTS.md` with project conventions for future development.
 - Added GitHub Actions CI for pull requests targeting `main`.
 
@@ -46,6 +46,11 @@ and a complete pipeline are still planned.
 - **Date normalization:** Added `clean_date()` and integrated it into
   `clean_products()` to support the dataset's mixed date formats, remove
   time-of-day values, and convert invalid dates to missing values.
+- **Categorical normalization:** Added normalization for category aliases,
+  country names/codes, currency codes, and common active-status values.
+- **Duplicate handling:** Added `deduplicate_products()` to select the latest
+  observation for each valid SKU while returning all duplicate rows in an
+  audit dataframe with the selected row marked.
 - **Pull request CI:** GitHub Actions installs locked uv dependencies and runs
   pytest and Ruff checks automatically.
 
@@ -60,7 +65,8 @@ and a complete pipeline are still planned.
   columns, and malformed CSV data.
 - Added transformation tests covering whitespace trimming, category cleanup,
   price formats, missing prices, invalid price text, stock quantities, and
-  date formats.
+  date formats, countries, currencies, active-status values, invalid-value
+  handling, and duplicate SKU selection.
 - Added `.github/workflows/ci.yml` for automated testing and linting.
 
 ## Delivery workflow
@@ -175,9 +181,9 @@ uv sync
 
 - Add a pipeline entry point that runs ingestion and transformation together.
 - Add output persistence for cleaned data.
-- Add business-rule validation for required values, dates, quantities, prices,
-  currencies, and duplicate product identifiers.
 - Add explicit validation reporting so invalid dates and other rejected values
   are retained as traceable data-quality issues.
+- Extend duplicate handling to duplicate `record_id` values and define the
+  business rule for conflicting observations with missing timestamps.
 - Expand normalization beyond the currently supported category and price
   variants.
