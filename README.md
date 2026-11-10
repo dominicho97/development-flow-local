@@ -1,8 +1,28 @@
-# development-flow-local
+# Development Flow — From Code to Production
 
-A small Python data-engineering project for loading and cleaning a raw product
-CSV. The current implementation provides reusable pandas functions and a
-command-line preview for ingestion; it does not yet write a cleaned dataset.
+**A hands-on project exploring professional software development practices through an end-to-end Python data engineering pipeline.**
+
+Writing working code is only one part of software engineering. Building reliable, maintainable and production-ready systems also requires version control, automated testing, code reviews, CI/CD, containerization and deployment practices.
+
+This project puts those practices into action by developing a realistic data pipeline incrementally, following a professional development workflow:
+
+**GitHub Issue → Feature Branch → Implementation → Testing → Pull Request → CI → Code Review → Merge**
+
+## What This Project Demonstrates
+
+- **Software Development:** Modular Python code, Git workflows, feature branches, meaningful commits and Pull Requests.
+- **Quality Engineering:** Unit testing with pytest, code quality enforcement with Ruff and automated CI using GitHub Actions.
+- **Data Engineering:** CSV ingestion, data cleaning, transformation and validation using pandas.
+- **AI-Assisted Development:** Using coding agents to implement scoped tasks while maintaining human review and verification.
+- **Production Engineering (Roadmap):** PostgreSQL, Docker, Airflow, integration testing and deployment automation.
+
+## Project Philosophy
+
+The goal isn't simply to build a working ETL pipeline. It's to understand **how software evolves from a local implementation into a reliable, testable and maintainable system**.
+
+Each feature is developed through a dedicated issue and branch, validated with automated tests, reviewed through a Pull Request and integrated into the main codebase.
+
+The repository documents both the technical implementation and the engineering practices used throughout the development process.
 
 ## Current capabilities
 
