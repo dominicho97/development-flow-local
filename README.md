@@ -125,5 +125,5 @@ if you intentionally want to delete the database volume.
 ## Project status
 
 The implemented work covers ingestion, dataframe cleaning, duplicate-SKU
-selection, and automated checks. A complete persisted pipeline, validation
-issue report, and output-writing CLI are future work.
+selection, an Airflow DAG with persisted outputs, and automated checks.
+Validation-issue reporting and database loading remain future work.
