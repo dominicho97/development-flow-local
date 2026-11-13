@@ -74,3 +74,20 @@ when that is useful.
 
 The workflow has read-only repository contents permission. Review the result
 from the pull request's Checks tab or the repository's Actions tab.
+
+## Docker and Airflow
+
+Build and start the local stack with Docker Desktop:
+
+```powershell
+docker build -t dominicho97/products_elt:1.0.1 .
+docker compose up -d
+docker compose ps
+```
+
+Airflow is available at `http://localhost:8080`. The dataset is mounted at
+`/opt/airflow/dataset`, and PostgreSQL initialization uses
+`docker/postgres/init-multiple-databases.sh`.
+
+Stop with `docker compose down`. Use `docker compose down -v` only to delete
+the PostgreSQL volume.

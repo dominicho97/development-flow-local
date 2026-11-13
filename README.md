@@ -93,6 +93,29 @@ path\to\your_script.py`.
 files; `duplicates` is returned separately so duplicate observations are not
 silently discarded.
 
+## Docker and Airflow
+
+Docker Desktop is required. Build the image and start the stack:
+
+```powershell
+docker build -t dominicho97/products_elt:1.0.1 .
+docker compose up -d
+docker compose ps
+```
+
+Airflow is available at `http://localhost:8080`. The `dataset/` directory is
+mounted at `/opt/airflow/dataset`.
+
+Stop the stack with:
+
+```powershell
+docker compose down
+```
+
+PostgreSQL initialization is handled by
+`docker/postgres/init-multiple-databases.sh`. Use `docker compose down -v` only
+if you intentionally want to delete the database volume.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md) — implemented pipeline and module roles
