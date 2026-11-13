@@ -81,6 +81,9 @@ x-airflow-common:
     # AIRFLOW_CONN_{CONN_ID}='my-conn-type://login:password@host:port/schema?param1=val1&param2=val2'
     # Connection to an external PostgreSQL database needed to store the data from the ELT process
     AIRFLOW_CONN_POSTGRES_DB_YT_ELT: 'postgresql://${ELT_DATABASE_USERNAME}:${ELT_DATABASE_PASSWORD}@${POSTGRES_CONN_HOST}:${POSTGRES_CONN_PORT}/${ELT_DATABASE_NAME}'
+    
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    
     # Variables can be written as follows: 
     # AIRFLOW_VAR_{VARIABLE_NAME}
     # AIRFLOW_VAR_API_KEY: ${API_KEY}
@@ -157,10 +160,10 @@ services:
       start_period: 30s
     restart: always
  
-  airflow-webserver:
+  airflow-api-server:
     <<: *airflow-common
-    command: webserver
-    container_name: airflow-webserver
+    command: api-server
+    container_name: airflow-api-server
     ports:
       - "8080:8080"
     healthcheck:
@@ -170,6 +173,15 @@ services:
       retries: 5
       start_period: 30s
     restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    container_name: airflow-dag-processor
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:

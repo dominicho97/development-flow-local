@@ -106,6 +106,12 @@ docker compose ps
 Airflow is available at `http://localhost:8080`. The `dataset/` directory is
 mounted at `/opt/airflow/dataset`.
 
+Authentication uses the FAB auth manager configured in `docker-compose.yml`.
+Initial administrator credentials are configured in `.env` with
+`AIRFLOW_WWW_USER_USERNAME` and `AIRFLOW_WWW_USER_PASSWORD`. See
+[login and authentication recovery](docs/development.md#login-and-authentication-recovery)
+for HTTP 401 errors, password resets, and authentication-manager checks.
+
 Stop the stack with:
 
 ```powershell

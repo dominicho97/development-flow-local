@@ -91,3 +91,51 @@ Airflow is available at `http://localhost:8080`. The dataset is mounted at
 
 Stop with `docker compose down`. Use `docker compose down -v` only to delete
 the PostgreSQL volume.
+
+### Login and authentication recovery
+
+The shared environment in `docker-compose.yml` explicitly selects FAB for
+Airflow 3 authentication:
+
+```yaml
+AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+```
+
+The initial administrator credentials come from `AIRFLOW_WWW_USER_USERNAME`
+and `AIRFLOW_WWW_USER_PASSWORD` in `.env`. Changing these values does not
+reset an existing account's password.
+
+If login returns HTTP 401 or `airflow users` fails with
+`AirflowSecurityManagerV2` missing `find_user` or `get_all_users`, check the
+active authentication manager:
+
+```powershell
+docker compose exec airflow-api-server airflow config get-value core auth_manager
+```
+
+If this reports `SimpleAuthManager`, ensure the FAB setting above is present
+under `&airflow-common-env`, then recreate the services and verify the setting
+again:
+
+```powershell
+docker compose up -d
+docker compose exec airflow-api-server airflow config get-value core auth_manager
+```
+
+Once FAB is active, reset the existing user's password (replace `airflow` if
+your configured username differs):
+
+```powershell
+docker compose exec airflow-api-server airflow users reset-password --username airflow
+```
+
+Enter the new password at the prompt. If the account does not exist, create it:
+
+```powershell
+docker compose exec airflow-api-server airflow users create --username airflow --firstname Airflow --lastname Admin --role Admin --email airflow@example.com
+```
+
+Enter a password when prompted, then log in at `http://localhost:8080`.
+These recovery steps preserve the PostgreSQL volume. If the attribute error
+persists with FAB active, inspect the API server logs and installed Airflow/FAB
+provider versions before making further changes.
