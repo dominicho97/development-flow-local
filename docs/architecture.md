@@ -20,6 +20,9 @@ deduplicate_products()
         +--> duplicate audit rows
 ```
 
+The Airflow DAG in `dags/products_elt_dag.py` orchestrates these stages and
+writes the cleaned data and duplicate audit to `dataset/processed/`.
+
 The stages are separate calls. `clean_products()` does not automatically call
 `deduplicate_products()`.
 
@@ -56,6 +59,11 @@ exercise ingestion and transformation behavior.
 The test suite covers ingestion failures, field-level transformations,
 invalid-value handling, date parsing, and duplicate-SKU selection.
 
+### `dags/products_elt_dag.py`
+
+The Airflow TaskFlow DAG validates the raw CSV, runs the cleaning and
+deduplication helpers, and verifies the processed output files.
+
 ### `.github/workflows/ci.yml`
 
 The CI workflow runs on pull requests targeting `main`. It installs Python 3.12
@@ -63,6 +71,5 @@ and locked uv dependencies, then runs pytest and Ruff.
 
 ## Current boundaries
 
-There is no orchestration module, persisted cleaned output, validation-issue
-dataset, database, or production scheduler in the repository. Those would be
-additional layers rather than responsibilities of the current helper modules.
+Validation-issue reporting, database loading, and production scheduling remain
+future work.
