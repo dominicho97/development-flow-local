@@ -151,7 +151,10 @@ staging and core loading, was confirmed successful on 2026-11-16 before quality
 gates were added. The subsequent quality-gated run passed staging and failed
 only core quality: one blank name and one negative price caused Soda exit
 status 2 and an Airflow task failure. Both automated scans are verified;
-remediation and a fully passing quality-gated run remain outstanding.
+remediation now converts negative prices to missing values and excludes blank
+names from core. Core writes also remove stored blank-name rows and clear
+stored negative prices within the upsert transaction. A fully passing live
+quality-gated run after rebuilding remains to be verified.
 Existing tables created by the earlier helper schema
 need a migration: `CREATE TABLE IF NOT EXISTS` does not alter their columns
 or add the new unique constraints.

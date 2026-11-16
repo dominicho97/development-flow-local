@@ -54,6 +54,66 @@ def test_staging_keeps_repeated_source_ids_and_retry_keys(monkeypatch):
     assert "source_record_id" not in data.columns
 
 
+def test_core_rejects_latest_blank_names_without_falling_back(caplog):
+    data = pd.DataFrame(
+        {
+            "sku": ["A", "A", "B", "C", "D"],
+            "last_seen": ["2026-01-01", "2026-02-01", "", "", ""],
+            "product_name": ["Old name", "  ", None, "", " Valid "],
+            "listed_price": ["1", "2", "3", "4", "-5"],
+        }
+    )
+    result = transform_data(data)
+    assert result["sku"].tolist() == ["D"]
+    assert result.iloc[0]["product_name"] == "Valid"
+    assert pd.isna(result.iloc[0]["listed_price"])
+    assert "Skipping 3 products without a name" in caplog.text
+    assert data.iloc[-1]["listed_price"] == "-5"
+
+
+def test_core_repairs_existing_invalid_rows_in_upsert_transaction(monkeypatch):
+    conn = MagicMock()
+    monkeypatch.setattr(data_modification, "get_db_connection", lambda: conn)
+    data = pd.DataFrame(
+        [
+            {
+                "sku": "A",
+                "product_name": "Rice",
+                "category": None,
+                "listed_price": None,
+                "stock_qty": None,
+            }
+        ]
+    )
+    data_modification.populate_table(data, "core")
+    cursor = conn.cursor.return_value.__enter__.return_value
+    queries = [call.args[0] for call in cursor.execute.call_args_list]
+    assert "DELETE FROM core.products" in queries[-3]
+    assert "product_name ~" in queries[-3]
+    assert "UPDATE core.products SET listed_price = NULL" in queries[-2]
+    assert "INSERT INTO core.products" in queries[-1]
+    assert conn.__exit__.call_args.args[0] is None
+
+
+def test_core_writer_rejects_blank_name_before_connecting(monkeypatch):
+    connect = MagicMock()
+    monkeypatch.setattr(data_modification, "get_db_connection", connect)
+    data = pd.DataFrame(
+        [
+            {
+                "sku": "A",
+                "product_name": "  ",
+                "category": None,
+                "listed_price": None,
+                "stock_qty": None,
+            }
+        ]
+    )
+    with pytest.raises(ValueError, match="names must not be empty"):
+        data_modification.populate_table(data, "core")
+    connect.assert_not_called()
+
+
 def test_staging_and_core_use_distinct_data(monkeypatch):
     raw = pd.DataFrame({"sku": ["A", "A"]})
     cleaned = pd.DataFrame({"sku": ["A"]})

@@ -256,9 +256,10 @@ the JWT secret can also require logging back into the UI.
    `update_core` succeed and `check_core_quality` fails as described below.
 5. Verify the persisted files on the host:
 
-The core quality task currently detects a blank product name and a negative
-price in the observed dataset. Until those issues are resolved, expect that
-task to fail; inspect its Soda output in the task log. See the
+The earlier run detected a blank product name and a negative price. Cleaning
+and core-write repairs now address these issues; rebuild the image and rerun
+the full DAG to apply them. Inspect both quality task logs for passing scans.
+See the
 [quality guide](data-quality.md) for investigation SQL and layer-specific rules.
 
 ```powershell

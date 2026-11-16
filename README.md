@@ -145,5 +145,7 @@ The subsequent automated quality-gated run passed staging and failed only
 `check_core_quality`, confirming that Soda failures propagate to Airflow.
 The core scan reported 9 of
 11 checks passing, with one blank product name and one negative price requiring
-investigation. Soda now runs automatically after each warehouse layer loads;
+investigation. Cleaning and transactional core repairs now address both issues;
+a rebuilt-image DAG run is needed to verify the fix in PostgreSQL.
+Soda now runs automatically after each warehouse layer loads;
 validation-issue reporting remains future work.

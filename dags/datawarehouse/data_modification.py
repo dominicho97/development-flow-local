@@ -75,6 +75,12 @@ def populate_table(data, schema):
         raise ValueError(f"Warehouse key {key} must not be empty.")
     if schema == "core" and data[key].duplicated().any():
         raise ValueError(f"Warehouse key {key} must be unique within a batch.")
+    if schema == "core":
+        empty_names = data["product_name"].isna() | (
+            data["product_name"].astype(str).str.strip().eq("")
+        )
+        if empty_names.any():
+            raise ValueError("Core product names must not be empty.")
 
     # PostgreSQL needs None for SQL NULL, rather than pandas NaN or NA.
     products = data.astype(object).where(pd.notna(data), None)
@@ -94,6 +100,17 @@ def populate_table(data, schema):
         with conn:
             with conn.cursor() as cursor:
                 create_table(cursor, schema)
+                if schema == "core":
+                    # Repair rows loaded before the current cleaning rules.
+                    # These changes share the upsert transaction and roll back on failure.
+                    cursor.execute(
+                        "DELETE FROM core.products "
+                        "WHERE product_name IS NULL OR product_name ~ '^\\s*$'"
+                    )
+                    cursor.execute(
+                        "UPDATE core.products SET listed_price = NULL "
+                        "WHERE listed_price < 0"
+                    )
                 for _, row in products.iterrows():
                     insert_rows(cursor, schema, row)
 

@@ -13,8 +13,10 @@ transform -> load -> update_core -> check_core_quality`.
 streams its output to task logs, and propagates nonzero exit codes to Airflow.
 A failed staging scan blocks downstream processing; a failed core scan marks
 the run unsuccessful after the core load has committed. Scans do not roll back
-loaded data. The previously observed blank name and negative price will fail
-the core task until the data or handling rules are corrected.
+loaded data. Core cleaning now rejects blank names and converts negative prices
+to missing values. The core writer also repairs previously stored violations
+in its load transaction. Rebuild the image and rerun the full DAG to apply this
+change to the database; clearing only the scan task will not repair data.
 
 Staging uses `postgres_staging` and `include/soda/checks_staging.yml` for seven
 checks: expected columns and raw text types, a nonempty table, present/unique/
@@ -120,8 +122,11 @@ propagation, unsupported-layer validation, and missing-configuration handling.
 Ruff lint and formatting checks passed for the changed Python files.
 
 These are data quality failures, rather than installation or connection
-errors. They remain unresolved; no cleanup or quarantine behavior has been
-implemented for these records. Investigate in the ELT database with a SQL client:
+errors. Remediation is now implemented: skip and log blank-name products, keep
+their raw rows in staging, and convert negative prices to `NULL`. Each core
+load also deletes existing blank-name rows and clears existing negative prices
+before upserting. The new rules still require a rebuilt-image DAG run to
+verify database results. Investigate in the ELT database with a SQL client:
 
 ```sql
 SELECT record_id, sku, product_name, listed_price
@@ -131,11 +136,11 @@ WHERE product_name IS NULL
    OR listed_price < 0;
 ```
 
-Decide the intended handling before changing data or transformation rules.
-The current price cleaner accepts parseable negative numbers, and blank
-product names can remain empty strings. PostgreSQL `NOT NULL` does not reject
-an empty string. Warehouse upserts also retain products absent from later
-inputs, so a later load alone does not guarantee removal of an affected row.
+The earlier cleaner accepted negative numbers and blank product names, and
+PostgreSQL `NOT NULL` does not reject an empty string. The current core load
+explicitly repairs these violations; other products absent from later inputs
+remain in the database. The shared cleaning output may still contain blank
+names for audit; the core-specific transformation excludes them.
 
 ## Troubleshooting
 

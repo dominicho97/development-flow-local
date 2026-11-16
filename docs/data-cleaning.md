@@ -31,8 +31,16 @@ decimal separators, and returns a float for parseable values. Empty values,
 `N/A`, malformed values, and values with multiple decimal points become
 `None`.
 
-Negative and zero prices are not rejected by the current cleaner; they remain
-numeric values and require a future validation rule.
+Negative prices become `None`; zero remains a valid price. Core transformation
+also excludes the latest product observation when its name is missing or
+blank, logging the skipped count and preserving the raw row in staging.
+Deduplication happens before this filter, so an older named observation is
+not substituted for a newer unnamed one.
+
+On each core load, the writer removes existing blank-name core rows and sets
+existing negative prices to SQL `NULL` in the same transaction as the upserts.
+Other absent products remain untouched. This repairs data loaded before these
+rules without changing staging or disabling the Soda checks.
 
 ### Stock
 
