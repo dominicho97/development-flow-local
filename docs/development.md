@@ -109,6 +109,9 @@ from the pull request's Checks tab or the repository's Actions tab.
 
 ## Docker and Airflow
 
+For the current Soda setup, the 11 PostgreSQL checks, scan commands, and known
+data failures, see [PostgreSQL data quality checks](data-quality.md).
+
 Before starting the stack, set `AIRFLOW_JWT_SECRET` in your local `.env` to a
 random secret. Generate one with the managed Python environment:
 
@@ -123,10 +126,34 @@ requires this variable and passes it to the Airflow services.
 Build and start the local stack with Docker Desktop:
 
 ```powershell
-docker build -t dominicho97/products_elt:1.0.1 .
+docker build -t dominicho97/products_elt:1.0.2 .
 docker compose up -d
 docker compose ps
 ```
+
+Soda Core Postgres 3.3.14 runs in `/home/airflow/soda-venv` because its
+OpenTelemetry dependencies conflict with Airflow 3.4.0. Run scans from Airflow
+tasks using a subprocess with `/home/airflow/soda-venv/bin/soda`, or use the
+`SODA_PYTHON` environment variable for a Python scan script. Importing Soda
+directly into an Airflow task uses the wrong Python environment.
+
+The image exposes `soda` on `PATH`. Verify the installation inside the worker:
+
+```bash
+soda --version
+uv pip show --python "$SODA_PYTHON" soda-core-postgres
+```
+
+To use Soda's Python interactively, activate its environment in the current shell:
+
+```bash
+source /home/airflow/soda-venv/bin/activate
+python -c "from importlib.metadata import version; print(version('soda-core-postgres'))"
+deactivate
+```
+
+Plain `pip show` checks Airflow's environment; use the explicit `uv pip show`
+command above to inspect Soda's environment.
 
 Airflow is available at `http://localhost:8080`. The dataset is mounted at
 `/opt/airflow/dataset`, and PostgreSQL initialization uses

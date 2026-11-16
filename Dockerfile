@@ -10,6 +10,7 @@ ARG AIRFLOW_VERSION
 
 ENV AIRFLOW_HOME=/opt/airflow
 ENV PYTHONPATH=/opt/airflow/project
+ENV SODA_PYTHON=/home/airflow/soda-venv/bin/python
 
 # Copy the official uv binary into the Airflow image.
 COPY --from=uv /uv /uvx /usr/local/bin/
@@ -26,9 +27,16 @@ RUN uv export \
         --frozen \
         --no-dev \
         --no-emit-project \
+        --prune soda-core-postgres \
         --format requirements.txt \
         --output-file /tmp/project-requirements.txt \
-    && chown airflow:root /tmp/project-requirements.txt
+    && uv export \
+        --frozen \
+        --no-dev \
+        --no-emit-project \
+        --format requirements.txt \
+        --output-file /tmp/soda-requirements.txt \
+    && chown airflow:root /tmp/project-requirements.txt /tmp/soda-requirements.txt
 
 USER airflow
 
@@ -39,6 +47,25 @@ RUN uv pip install \
         "apache-airflow==${AIRFLOW_VERSION}" \
         --requirement /tmp/project-requirements.txt \
     && rm /tmp/project-requirements.txt
+
+# Soda 3.3.14 requires older OpenTelemetry packages than Airflow 3.4.0.
+# Keep its locked dependencies in a separate environment, invoked via subprocess.
+USER root
+RUN mkdir -p /tmp/.cache/uv && chown -R airflow:root /tmp/.cache/uv
+USER airflow
+RUN uv venv --python "${VIRTUAL_ENV}/bin/python" /home/airflow/soda-venv \
+    && uv pip install \
+        --no-cache \
+        --python "${SODA_PYTHON}" \
+        --requirement /tmp/soda-requirements.txt \
+    && rm /tmp/soda-requirements.txt
+
+# Expose the Soda CLI without changing Airflow's Python or dependency environment.
+USER root
+RUN ln -s /home/airflow/soda-venv/bin/soda /usr/local/bin/soda
+USER airflow
+RUN soda --version \
+    && uv pip show --python "${SODA_PYTHON}" soda-core-postgres
 
 # Make the repository modules available to Airflow tasks.
 COPY --chown=airflow:root src ./src
