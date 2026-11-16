@@ -101,13 +101,20 @@ task dependencies.
   failures propagate and roll back. Missing pandas values become SQL NULL.
 
 `staging.products` stores raw observations, identified by a unique
-`source_record_id` copied from the CSV's `record_id`. Duplicate SKUs can have
+`source_record_id` encoding `[original record_id, occurrence number]` as JSON
+text. Repeated source IDs and duplicate SKUs can have
 separate staging observations. Price and stock remain text.
+Occurrence numbers follow CSV row order within each source ID; retrying the
+same file reuses the keys. Reordering observations sharing an ID can change
+which observation is assigned to a key. Staging is not an immutable history.
 
 `core.products` stores cleaned, deduplicated products, identified by unique
 SKU, with numeric prices and integer stock. Both tables have a generated
 database `record_id`. Repeat loads update matching keys; rows absent from the
 input remain in the database.
+Rows with blank or missing SKUs are excluded from core with a warning that
+reports their count. They remain in staging and the processed CSV outputs.
+The database writer still rejects empty core keys as a final validation check.
 
 Core currently reloads and transforms the raw CSV; it does not read staging
 or the processed CSV. The task dependency ensures staging finishes first.
@@ -121,7 +128,8 @@ and locked uv dependencies, then runs pytest and Ruff.
 ## Current boundaries
 
 Validation-issue reporting and production scheduling remain future work.
-Warehouse code is covered by unit tests, but live PostgreSQL loading still
-requires verification. Existing tables created by the earlier helper schema
+Warehouse code is covered by unit tests. A full local Airflow run, including
+staging and core loading, was confirmed successful on 2026-11-16.
+Existing tables created by the earlier helper schema
 need a migration: `CREATE TABLE IF NOT EXISTS` does not alter their columns
 or add the new unique constraints.

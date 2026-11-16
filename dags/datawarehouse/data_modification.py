@@ -1,5 +1,6 @@
 """Insert or update raw staging rows and cleaned core products."""
 
+import json
 from contextlib import closing
 
 import pandas as pd
@@ -29,7 +30,7 @@ def insert_rows(cursor, schema, row):
                 listed_price = EXCLUDED.listed_price,
                 stock_qty = EXCLUDED.stock_qty
         """
-        values = (row["record_id"], *values)
+        values = (row["source_record_id"], *values)
     elif schema == "core":
         query = """
             INSERT INTO core.products
@@ -72,11 +73,21 @@ def populate_table(data, schema):
     empty_keys = data[key].isna() | data[key].astype(str).str.strip().eq("")
     if empty_keys.any():
         raise ValueError(f"Warehouse key {key} must not be empty.")
-    if data[key].duplicated().any():
+    if schema == "core" and data[key].duplicated().any():
         raise ValueError(f"Warehouse key {key} must be unique within a batch.")
 
     # PostgreSQL needs None for SQL NULL, rather than pandas NaN or NA.
     products = data.astype(object).where(pd.notna(data), None)
+    if schema == "staging":
+        # Keep every observation, even when the source repeats record IDs.
+        # The same file produces the same keys when retried.
+        occurrences = products.groupby("record_id", sort=False).cumcount() + 1
+        products["source_record_id"] = [
+            json.dumps([str(record_id), int(occurrence)])
+            for record_id, occurrence in zip(
+                products["record_id"], occurrences, strict=True
+            )
+        ]
 
     with closing(get_db_connection()) as conn:  # noqa: SIM117 -- show each lifecycle step
         # Commit on success; roll back the whole batch if any row fails.

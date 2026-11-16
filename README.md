@@ -136,5 +136,5 @@ if you intentionally want to delete the database volume.
 
 The implemented work covers ingestion, dataframe cleaning, duplicate-SKU
 selection, an Airflow DAG with persisted outputs, and automated checks.
-The DAG now includes staging and core PostgreSQL loading tasks; live warehouse
-loading still needs verification. Validation-issue reporting remains future work.
+The DAG includes staging and core PostgreSQL loading tasks. A full local run
+was confirmed successful on 2026-11-16. Validation-issue reporting remains future work.

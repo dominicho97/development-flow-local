@@ -244,7 +244,8 @@ SELECT COUNT(*) FROM core.products;
 SELECT * FROM core.products LIMIT 10;
 ```
 
-Staging retains raw observations by source record ID; core retains cleaned,
+Staging retains raw observations by source record ID plus occurrence number
+(stored together as JSON text in `source_record_id`); core retains cleaned,
 deduplicated products by SKU. Reruns update matching keys without deleting
 rows absent from the input. Core reads the raw CSV and applies the shared
 transformation functions again; it does not query staging.
@@ -254,9 +255,28 @@ staging requires a unique `source_record_id`, and core requires unique `sku`.
 Table creation does not upgrade existing tables. Do not delete the PostgreSQL
 volume to work around a schema mismatch.
 
-The warehouse changes passed unit tests and lint checks; confirm live database
-loading with a fresh DAG run. For local tests, use `uv run python -m pytest
-tests -q` to avoid collecting files under Airflow's generated log directories.
+The full DAG, including PostgreSQL staging and core loading, was confirmed
+successful locally on 2026-11-16. The latest code checks passed 69 tests and
+Ruff linting. Run local tests with:
+
+```powershell
+uv run python -m pytest tests -q
+```
+
+Specifying `tests` avoids collecting Airflow's generated log directories.
+
+Two data issues were resolved during the first warehouse runs:
+
+- Repeated raw `record_id` values are valid staging observations. Staging
+  combines the original ID and its occurrence number into a unique key,
+  preserving repeated observations and making retries of the same file safe.
+- Blank or missing SKUs cannot identify core products. Core transformation
+  excludes these rows and logs the skipped count. The rows remain in staging
+  and processed CSV outputs; the database writer still validates core keys.
+
+To retry a failed warehouse task after a fix, clear that task in Airflow or
+trigger a new run. Changes under the mounted `dags/` directory need no image
+rebuild; changes to image dependencies or copied `src/` code require rebuilding.
 
 ### Diagnose task startup failures
 
