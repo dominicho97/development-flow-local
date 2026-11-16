@@ -1,0 +1,54 @@
+record_id,sku,product_name,category,brand,origin_country,package_size,listed_price,currency,stock_qty,last_seen,is_active,record_source
+R-0001,SYN-0001,Jasmine Rice,Rice & Noodles,Golden Lotus,TH,5 kg,12.99,EUR,35,2026-10-21,True,synthetic_practice
+R-0002,SYN-0002,Sushi Rice,Rice & Noodles,Sakura Pantry,JP,1000g,5.49,EUR,22,2026-10-22,True,synthetic_practice
+R-0004,SYN-0004,Udon Noodles,Rice & Noodles,Sakura Pantry,JP,200 g,1.69,EUR,38,2026-10-24,True,synthetic_practice
+R-0005,SYN-0005,Instant Ramen Spicy,Rice & Noodles,Red Lantern,KR,120 g,1.39,EUR,75,2026-10-25,True,synthetic_practice
+R-0006,SYN-0006,Egg Noodles,Rice & Noodles,,CN,0.5 kg,2.59,EUR,41,2026-10-26,True,synthetic_practice
+R-0007,SYN-0007,Glass Noodles,Rice & Noodles,River Field,CN,250 g,2.29,EUR,,2026-10-27,True,synthetic_practice
+R-0008,SYN-0008,Brown Rice,Rice & Noodles,Golden Lotus,TH,1 kg,,EUR,19,2026-10-28,True,synthetic_practice
+R-0009,SYN-0009,Soba Noodles,Rice & Noodles,Sakura Pantry,JP,300 g,3.79,EUR,21,2026-10-29,True,synthetic_practice
+R-0010,SYN-0010,Rice Cakes - Tteok,Rice & Noodles,Moonlight Foods,KR,500 g,4.49,EUR,15,2026-10-30,True,synthetic_practice
+R-0012,SYN-0012,Dark Soy Sauce,Sauces & Condiments,Jade Kitchen,CN,500ML,3.59,EUR,18,2026-11-01,True,synthetic_practice
+R-0013,SYN-0013,Oyster Sauce,Sauces & Condiments,Ocean Gate,TH,510 g,-4.19,EUR,24,2026-11-02,True,synthetic_practice
+R-0014,SYN-0014,Sesame Oil,Sauces & Condiments,Golden Lotus,CN,250 ml,5.99,EUR,,2026-10-20,True,synthetic_practice
+R-0015,SYN-0015,Chilli Crisp,Sauces & Condiments,red lantern,CN,210 g,4.89,EUR,28,2026-10-21,True,synthetic_practice
+R-0016,SYN-0016,Rice Vinegar,Sauces & Condiments,Sakura Pantry,JP,500 ml,2.89,EUR,26,2026-10-22,True,synthetic_practice
+R-0017,SYN-0017,Gochujang Chili Paste,Sauces & Condiments,Moonlight Foods,KR,500 g,5.29,EUR,17,2026-11-01,True,synthetic_practice
+R-0018,SYN-0018,Miso Paste White,Sauces & Condiments,Sakura Pantry,JP,400 g,4.59,EUR,13,2026-10-24,True,synthetic_practice
+R-0019,SYN-0019,Sweet Chili Sauce,Sauces & Condiments,Green Bamboo,TH,700 ml,3.69,EUR,29,2026-10-25,True,synthetic_practice
+R-0020,SYN-0020,Coconut Milk,Canned Goods,River Field,TH,400 ml,2.09,EUR,60,2026-10-26,True,synthetic_practice
+R-0021,SYN-0021,Canned Bamboo Shoots,Canned Goods,Green Bamboo,CN,400 g,1.79,EUR,,2026-10-27,True,synthetic_practice
+R-0022,SYN-0022,,Canned Goods,Green Bamboo,CN,230 g,2.49,EUR,16,2026-10-28,True,synthetic_practice
+R-0023,SYN-0023,Red Bean Paste,Canned Goods,Golden Lotus,CN,500 g,3.19,EUR,12,2026-10-29,True,synthetic_practice
+R-0025,SYN-0025,Vegetable Gyoza,Chilled & Frozen,Sakura Pantry,JP,600 g,6.99,EUR,,2026-10-31,True,synthetic_practice
+R-0026,SYN-0026,Shrimp Dumplings,Chilled & Frozen,Ocean Gate,VN,400 g,7.49,EUR,14,,True,synthetic_practice
+R-0027,SYN-0027,Bao Buns,Chilled & Frozen,Jade Kitchen,CN,6 pcs,4.99,USD,23,2026-11-02,True,synthetic_practice
+R-0028,SYN-0028,Frozen Edamame,Chilled & Frozen,Sakura Pantry,CN,500 g,3.99,EUR,29,2026-10-20,True,synthetic_practice
+R-0029,SYN-0029,Spring Rolls Vegetable,Chilled & Frozen,green bamboo,VN,12 pcs,5.49,EUR,11,2026-10-21,False,synthetic_practice
+R-0030,SYN-0030,Mochi Ice Cream Mango,Chilled & Frozen,Moonlight Foods,JP,6 pcs,6.49,EUR,8,2026-10-29,True,synthetic_practice
+R-0031,SYN-0031,Nori Seaweed Sheets,Snacks & Seaweed,Sakura Pantry,KR,10pcs,2.99,EUR,40,2026-10-23,True,synthetic_practice
+R-0032,SYN-0032,Shrimp Crackers,Snacks & Seaweed,Ocean Gate,ID,200 g,2.69,EUR,0,2026-10-24,True,synthetic_practice
+R-0033,SYN-0033,Wasabi Peas,Snacks & Seaweed,Red Lantern,CN,150g,2.19,EUR,54,2026-10-25,False,synthetic_practice
+R-0034,SYN-0034,Rice Crackers Mix,Snacks & Seaweed,Golden Lotus,JP,300 g,,EUR,31,2026-10-26,True,synthetic_practice
+R-0035,SYN-0035,Roasted Seaweed Snack,Snacks & Seaweed,Moonlight Foods,KR,3x5g,1.99,EUR,63,2026-10-27,True,synthetic_practice
+R-0036,SYN-0036,Pocky Style Chocolate Sticks,Snacks & Seaweed,Sakura Pantry,TH,50 g,1.79,EUR,58,2026-10-28,True,synthetic_practice
+R-0037,SYN-0037,Lychee Drink,Beverages,Golden Lotus,CN,330 ml,1.59,EUR,,2026-10-29,True,synthetic_practice
+R-0038,SYN-0038,Jasmine Green Tea,Beverages,Mountain Leaf,TW,500 ml,1.89,EUR,57,2026-11-02,True,synthetic_practice
+R-0039,SYN-0039,Mango Nectar,Beverages,River Field,PH,1 L,2.99,EUR,33,2026-10-31,True,synthetic_practice
+R-0040,SYN-0040,Bubble Tea Tapioca Pearls,Beverages,Moonlight Foods,TW,250g,3.89,EUR,25,2026-11-01,True,synthetic_practice
+R-0041,SYN-0041,Coconut Water,Beverages,River Field,TH,1 L,2.79,EUR,43,2026-11-02,True,synthetic_practice
+R-0042,SYN-0042,Matcha Powder,Tea & Coffee,Mountain Leaf,JP,100 g,12.49,EUR,12,2026-10-20,True,synthetic_practice
+R-0043,SYN-0043,Oolong Tea,Tea & Coffee,Mountain Leaf,TW,100 g,6.49,EUR,,,True,synthetic_practice
+R-0044,SYN-0044,Vietnamese Ground Cofee,Tea & Coffee,Green Bamboo,VN,250 g,5.99,EUR,22,2026-10-22,True,synthetic_practice
+R-0045,SYN-0045,Fresh Bok Choy,Fresh Produce,Market Fresh,BE,500 G,2.49,EUR,20,2026-10-23,True,synthetic_practice
+R-0046,SYN-0046,Daikon Radish,Fresh Produce,Market Fresh,NL,1 pc,0.0,EUR,9999,2026-10-24,True,synthetic_practice
+R-0047,SYN-0047,Thai Basil,Fresh Produce,Market Fresh,TH,100 g,2.99,EUR,10,,True,synthetic_practice
+R-0048,SYN-0048,Fresh Lemongrass,Fresh Produce,Market Fresh,TH,,1.99,EUR,22,2026-10-26,True,synthetic_practice
+R-0049,SYN-0049,Bamboo Chopsticks,Non Food,Jade Kitchen,CN,10 pairs,3.49,EUR,38,2026-10-27,True,synthetic_practice
+R-0050,SYN-0050,Bamboo Steamer Basket,Kitchenware,Jade Kitchen,CN,20 cm,14.99,EUR,,2026-10-28,True,synthetic_practice
+R-0051,SYN-0051,Rice Paddle,Kitchenware,Sakura Pantry,JP,1 pc,2.49,EUR,30,2026-10-29,True,synthetic_practice
+R-0052,SYN-0052,Sushi Rolling Mat,Kitchenware,Sakura Pantry,CN,1 pc,2.99,EUR,21,2026-10-30,False,synthetic_practice
+R-0053,SYN-0011,Light soy sauce,Sauces & Condiments,Jade Kitchen,CN,500 ml,3.39,EUR,27,2026-11-03,True,synthetic_practice
+R-0054,SYN-0024,Kimchi,Frozen,Moonlight Foods,KR,"0,5kg",5.89,EUR,20,2026-11-03,True,synthetic_practice
+R-0055,SYN-0003,rice vermicelli,Rice & Noodles,Green Bamboo,VN,400 g,2.19,EUR,48,2026-11-02,True,synthetic_practice
+R-0057,,Jasmine Green Tea Unsweetened,Beverages,Mountain Leaf,TW,500 ml,1.89,EUR,57,2026-11-02,True,synthetic_practice
