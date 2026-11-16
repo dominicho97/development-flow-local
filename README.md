@@ -32,8 +32,8 @@ The repository documents both the technical implementation and the engineering p
   currencies, and active-status values.
 - Select the latest observation for duplicate SKUs while returning duplicate
   rows for audit.
-- Run 11 manual Soda checks against PostgreSQL `core.products`, covering
-  schema, completeness, uniqueness, numeric validity, and text cleaning.
+- Run Soda quality gates after staging and core loads: seven staging checks
+  and 11 core checks covering schema, completeness, uniqueness, and validity.
 - Run automated tests and Ruff checks in GitHub Actions for pull requests to
   `main`.
 
@@ -140,7 +140,10 @@ if you intentionally want to delete the database volume.
 The implemented work covers ingestion, dataframe cleaning, duplicate-SKU
 selection, an Airflow DAG with persisted outputs, and automated checks.
 The DAG includes staging and core PostgreSQL loading tasks. A full local run
-was confirmed successful on 2026-11-16. The expanded Soda scan reported 9 of
+was confirmed successful before quality gates were added on 2026-11-16.
+The subsequent automated quality-gated run passed staging and failed only
+`check_core_quality`, confirming that Soda failures propagate to Airflow.
+The core scan reported 9 of
 11 checks passing, with one blank product name and one negative price requiring
-investigation. Automatic Soda execution in the DAG and validation-issue reporting
-remain future work.
+investigation. Soda now runs automatically after each warehouse layer loads;
+validation-issue reporting remains future work.
