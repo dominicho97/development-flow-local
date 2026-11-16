@@ -1,0 +1,51 @@
+# Soda Core-compatible checks for core.products.
+# References:
+# https://docs.soda.io/soda-documentation/soda-v3/sodacl-reference/schema
+# https://docs.soda.io/soda-documentation/soda-v3/sodacl-reference/missing-metrics
+# https://docs.soda.io/soda-documentation/soda-v3/sodacl-reference/validity-metrics
+checks for products:
+  - schema:
+      name: Core product columns and types match the warehouse contract
+      fail:
+        when required column missing:
+          - record_id
+          - sku
+          - product_name
+          - category
+          - listed_price
+          - stock_qty
+        when wrong column type:
+          record_id: bigint
+          sku: text
+          product_name: text
+          category: text
+          listed_price: numeric
+          stock_qty: integer
+
+  # Availability and primary-key integrity.
+  - row_count > 0
+  - missing_count(record_id) = 0
+  - duplicate_count(record_id) = 0
+  - invalid_count(record_id) = 0:
+      valid min: 1
+
+  # Required text must contain more than whitespace, in addition to being non-null.
+  - missing_count(sku) = 0:
+      missing regex: '^\s*$'
+  - duplicate_count(sku) = 0
+  - missing_count(product_name) = 0:
+      missing regex: '^\s*$'
+
+  # Unknown values remain nullable; present values must be nonnegative.
+  - invalid_count(listed_price) = 0:
+      valid min: 0
+  - invalid_count(stock_qty) = 0:
+      valid min: 0
+
+  - failed rows:
+      name: Product text is trimmed and categories are not blank
+      fail condition: >-
+        sku <> BTRIM(sku)
+        OR product_name <> BTRIM(product_name)
+        OR (category IS NOT NULL AND
+            (category = '' OR category <> BTRIM(category)))

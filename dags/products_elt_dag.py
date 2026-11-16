@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pendulum
 from airflow.sdk import dag, task
+from dataquality.soda import products_elt_data_quality
 from datawarehouse.dwh import core_table, staging_table
 
 from src.ingestion import load_products
@@ -63,14 +64,28 @@ def products_elt_dag():
         """Insert or update cleaned, deduplicated products in core.products."""
         return core_table(csv_path=raw_file)
 
+    @task
+    def check_staging_quality() -> None:
+        """Validate raw observations before continuing the pipeline."""
+        products_elt_data_quality("staging")
+
+    @task
+    def check_core_quality() -> None:
+        """Validate the cleaned warehouse after the core upsert commits."""
+        products_elt_data_quality("core")
+
+    # Define the task dependencies to form the DAG
     raw_file = extract()
     staging = update_staging(raw_file)
     outputs = transform(raw_file)
     verified = load(outputs)
     core = update_core(raw_file)
+    staging_quality = check_staging_quality()
+    core_quality = check_core_quality()
 
-    staging >> outputs
-    verified >> core
+ #
+    staging >> staging_quality >> outputs
+    verified >> core >> core_quality
 
 
 products_elt_dag()

@@ -1,0 +1,29 @@
+# Raw staging allows duplicate SKUs, blank names, and unclean numeric text.
+checks for products:
+  - schema:
+      name: Raw product columns and types match the staging contract
+      fail:
+        when required column missing:
+          - record_id
+          - source_record_id
+          - sku
+          - product_name
+          - category
+          - listed_price
+          - stock_qty
+        when wrong column type:
+          record_id: bigint
+          source_record_id: text
+          sku: text
+          product_name: text
+          category: text
+          listed_price: text
+          stock_qty: text
+  - row_count > 0
+  - missing_count(record_id) = 0
+  - duplicate_count(record_id) = 0
+  - invalid_count(record_id) = 0:
+      valid min: 1
+  - missing_count(source_record_id) = 0:
+      missing regex: '^\s*$'
+  - duplicate_count(source_record_id) = 0

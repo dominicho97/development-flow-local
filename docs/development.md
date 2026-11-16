@@ -109,6 +109,9 @@ from the pull request's Checks tab or the repository's Actions tab.
 
 ## Docker and Airflow
 
+For the current Soda setup, the 11 PostgreSQL checks, scan commands, and known
+data failures, see [PostgreSQL data quality checks](data-quality.md).
+
 Before starting the stack, set `AIRFLOW_JWT_SECRET` in your local `.env` to a
 random secret. Generate one with the managed Python environment:
 
@@ -123,10 +126,34 @@ requires this variable and passes it to the Airflow services.
 Build and start the local stack with Docker Desktop:
 
 ```powershell
-docker build -t dominicho97/products_elt:1.0.1 .
+docker build -t dominicho97/products_elt:1.0.2 .
 docker compose up -d
 docker compose ps
 ```
+
+Soda Core Postgres 3.3.14 runs in `/home/airflow/soda-venv` because its
+OpenTelemetry dependencies conflict with Airflow 3.4.0. Run scans from Airflow
+tasks using a subprocess with `/home/airflow/soda-venv/bin/soda`, or use the
+`SODA_PYTHON` environment variable for a Python scan script. Importing Soda
+directly into an Airflow task uses the wrong Python environment.
+
+The image exposes `soda` on `PATH`. Verify the installation inside the worker:
+
+```bash
+soda --version
+uv pip show --python "$SODA_PYTHON" soda-core-postgres
+```
+
+To use Soda's Python interactively, activate its environment in the current shell:
+
+```bash
+source /home/airflow/soda-venv/bin/activate
+python -c "from importlib.metadata import version; print(version('soda-core-postgres'))"
+deactivate
+```
+
+Plain `pip show` checks Airflow's environment; use the explicit `uv pip show`
+command above to inspect Soda's environment.
 
 Airflow is available at `http://localhost:8080`. The dataset is mounted at
 `/opt/airflow/dataset`, and PostgreSQL initialization uses
@@ -223,9 +250,16 @@ the JWT secret can also require logging back into the UI.
    `./dataset:/opt/airflow/dataset` for the Airflow services.
 2. Open `http://localhost:8080`, log in, and find `products_elt`.
 3. Unpause the DAG and trigger a manual run; it has no automatic schedule.
-4. Confirm `extract`, `update_staging`, `transform`, `load`, and `update_core`
-   all succeed, in that order.
+4. Confirm `extract`, `update_staging`, `check_staging_quality`, `transform`,
+   `load`, `update_core`, and `check_core_quality`
+   execute in that order. With the currently observed data, all tasks through
+   `update_core` succeed and `check_core_quality` fails as described below.
 5. Verify the persisted files on the host:
+
+The core quality task currently detects a blank product name and a negative
+price in the observed dataset. Until those issues are resolved, expect that
+task to fail; inspect its Soda output in the task log. See the
+[quality guide](data-quality.md) for investigation SQL and layer-specific rules.
 
 ```powershell
 Get-ChildItem dataset/processed
@@ -255,9 +289,13 @@ staging requires a unique `source_record_id`, and core requires unique `sku`.
 Table creation does not upgrade existing tables. Do not delete the PostgreSQL
 volume to work around a schema mismatch.
 
-The full DAG, including PostgreSQL staging and core loading, was confirmed
-successful locally on 2026-11-16. The latest code checks passed 69 tests and
-Ruff linting. Run local tests with:
+The warehouse DAG was confirmed successful locally on 2026-11-16 before
+quality gates were added. The subsequent automated run verified both quality
+tasks: staging passed, and only core quality failed on the two known data
+issues. The core log reported 9/11 passing checks and Soda exit status 2,
+propagated as `CalledProcessError`. The latest code checks passed 73 tests;
+Ruff lint and formatting checks passed for the changed Python files.
+Run local tests with:
 
 ```powershell
 uv run python -m pytest tests -q

@@ -71,6 +71,24 @@ deduplication helpers, verifies the processed output files, and invokes the
 warehouse loaders. It imports `dag` and `task` from the Airflow 3 public
 interface, `airflow.sdk`.
 
+The execution order is `extract -> update_staging -> check_staging_quality ->
+transform -> load -> update_core -> check_core_quality`. Staging quality gates
+downstream processing; core quality validates the committed core table.
+
+### `dags/dataquality/soda.py`
+
+`products_elt_data_quality(layer)` validates the layer and configuration paths,
+then invokes `/home/airflow/soda-venv/bin/soda` with `subprocess.run(check=True)`.
+Scan output reaches the Airflow task log, and nonzero exits fail the task.
+Soda 3.3.14 uses a separate environment to avoid conflicting with Airflow
+3.4.0's OpenTelemetry dependencies. No database scans execute during DAG import.
+
+The shared `include/soda/configuration.yml` maps `postgres_staging` and
+`postgres_core` to their database schemas using Compose environment variables.
+Seven staging checks validate raw storage integrity; 11 core checks validate
+schema, keys, text, and numeric values. A scan failure does not roll back the
+preceding load. See [data quality](data-quality.md) for commands and rules.
+
 ### `dags/datawarehouse/data_loading.py`
 
 Provides a configuration-driven CSV loader without importing Airflow:
@@ -129,7 +147,11 @@ and locked uv dependencies, then runs pytest and Ruff.
 
 Validation-issue reporting and production scheduling remain future work.
 Warehouse code is covered by unit tests. A full local Airflow run, including
-staging and core loading, was confirmed successful on 2026-11-16.
+staging and core loading, was confirmed successful on 2026-11-16 before quality
+gates were added. The subsequent quality-gated run passed staging and failed
+only core quality: one blank name and one negative price caused Soda exit
+status 2 and an Airflow task failure. Both automated scans are verified;
+remediation and a fully passing quality-gated run remain outstanding.
 Existing tables created by the earlier helper schema
 need a migration: `CREATE TABLE IF NOT EXISTS` does not alter their columns
 or add the new unique constraints.
