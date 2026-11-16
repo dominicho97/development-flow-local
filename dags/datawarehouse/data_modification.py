@@ -1,124 +1,89 @@
+"""Insert or update raw staging rows and cleaned core products."""
 
-import logging
+from contextlib import closing
 
-logger = logging.getLogger(__name__)
-table = "products"
+import pandas as pd
 
-def insert_rows(cur,conn,schema,row):
-
-    try:
-
-        if schema == 'staging':
-
-            insert_sql = f"""
-            INSERT INTO {schema}.{table} (sku, product_name, category, listed_price, stock_qty)
-            VALUES (%s, %s, %s, %s, %s);
-            """
-            cur.execute(insert_sql, (row["sku"], row["product_name"], row["category"], row["listed_price"], row["stock_qty"]))
-            conn.commit()
-
-            logger.info(f"Inserted row with SKU: {row['sku']} into {schema}.{table}.")
-        else:
-            # Check if the row already exists in the target table
-            check_sql = f"""
-            SELECT record_id FROM {schema}.{table} WHERE sku = %s;
-            """
-            cur.execute(check_sql, (row["sku"],))
-            existing_row = cur.fetchone()
-
-            if existing_row is None:
-                insert_sql = f"""
-                INSERT INTO {schema}.{table} (sku, product_name, category, listed_price, stock_qty)
-                VALUES (%s, %s, %s, %s, %s);
-                """
-                cur.execute(insert_sql, (row["sku"], row["product_name"], row["category"], row["listed_price"], row["stock_qty"]))
-                conn.commit()
-
-                logger.info(f"Inserted row with SKU: {row['sku']} into {schema}.{table}.")
-            else:
-                logger.warning(f"Row with SKU: {row['sku']} already exists in {schema}.{table}. Skipping insertion.")
-    except Exception as e:
-        logger.error(f"Error inserting row with SKU: {row['sku']} into {schema}.{table}: {e}")
-    conn.commit()
-
-    logger.info(f"Finished processing row with SKU: {row['sku']} for {schema}.{table}.")
+from .data_utils import create_table, get_db_connection
 
 
-        
-    
+def insert_rows(cursor, schema, row):
+    """Insert a product, updating its values when its warehouse key exists."""
+    values = (
+        row["sku"],
+        row["product_name"],
+        row["category"],
+        row["listed_price"],
+        row["stock_qty"],
+    )
 
-def update_rows(cur,conn,schema,row):
+    if schema == "staging":
+        query = """
+            INSERT INTO staging.products
+                (source_record_id, sku, product_name, category, listed_price, stock_qty)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (source_record_id) DO UPDATE SET
+                sku = EXCLUDED.sku,
+                product_name = EXCLUDED.product_name,
+                category = EXCLUDED.category,
+                listed_price = EXCLUDED.listed_price,
+                stock_qty = EXCLUDED.stock_qty
+        """
+        values = (row["record_id"], *values)
+    elif schema == "core":
+        query = """
+            INSERT INTO core.products
+                (sku, product_name, category, listed_price, stock_qty)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (sku) DO UPDATE SET
+                product_name = EXCLUDED.product_name,
+                category = EXCLUDED.category,
+                listed_price = EXCLUDED.listed_price,
+                stock_qty = EXCLUDED.stock_qty
+        """
+    else:
+        raise ValueError("Expected staging or core schema.")
 
-    try:
-        #staging
-        if schema == 'staging':
-            update_sql = f"""
-            UPDATE {schema}.{table}
-            SET product_name = %s, category = %s, listed_price = %s, stock_qty = %s
-            WHERE sku = %s;
-            """
-            cur.execute(update_sql, (row["product_name"], row["category"], row["listed_price"], row["stock_qty"], row["sku"]))
-            conn.commit()
-
-            logger.info(f"Updated row with SKU: {row['sku']} in {schema}.{table}.")
-        else:
-            # Check if the row exists in the target table
-            check_sql = f"""
-            SELECT record_id FROM {schema}.{table} WHERE sku = %s;
-            """
-            cur.execute(check_sql, (row["sku"],))
-            existing_row = cur.fetchone()
-
-            if existing_row is not None:
-                update_sql = f"""
-                UPDATE {schema}.{table}
-                SET product_name = %s, category = %s, listed_price = %s, stock_qty = %s
-                WHERE sku = %s;
-                """
-                cur.execute(update_sql, (row["product_name"], row["category"], row["listed_price"], row["stock_qty"], row["sku"]))
-                conn.commit()
-
-                logger.info(f"Updated row with SKU: {row['sku']} in {schema}.{table}.")
-            else:
-                logger.warning(f"Row with SKU: {row['sku']} does not exist in {schema}.{table}. Skipping update.")
+    values = tuple(None if pd.isna(value) else value for value in values)
+    cursor.execute(query, values)
 
 
-            cur.execute(update_sql, (row["product_name"], row["category"], row["listed_price"], row["stock_qty"], row["sku"]))
-            conn.commit()
+def populate_table(data, schema):
+    """Save all rows in one transaction and return the number processed."""
+    if schema == "staging":
+        key = "record_id"
+    elif schema == "core":
+        key = "sku"
+    else:
+        raise ValueError("Expected staging or core schema.")
 
-            logger.info(f"Updated row with SKU: {row['sku']} in {schema}.{table}.")
-    except Exception as e:
-        logger.error(f"Error updating row with SKU: {row['sku']} in {schema}.{table}: {e}")
+    required_columns = {
+        key,
+        "sku",
+        "product_name",
+        "category",
+        "listed_price",
+        "stock_qty",
+    }
+    missing_columns = required_columns - set(data.columns)
+    if missing_columns:
+        raise ValueError(f"Missing warehouse columns: {sorted(missing_columns)}")
 
-def delete_rows(cur,conn,schema,row):
+    empty_keys = data[key].isna() | data[key].astype(str).str.strip().eq("")
+    if empty_keys.any():
+        raise ValueError(f"Warehouse key {key} must not be empty.")
+    if data[key].duplicated().any():
+        raise ValueError(f"Warehouse key {key} must be unique within a batch.")
 
-    try:
-        #staging
-        if schema == 'staging':
-            delete_sql = f"""
-            DELETE FROM {schema}.{table} WHERE sku = %s;
-            """
-            cur.execute(delete_sql, (row["sku"],))
-            conn.commit()
+    # PostgreSQL needs None for SQL NULL, rather than pandas NaN or NA.
+    products = data.astype(object).where(pd.notna(data), None)
 
-            logger.info(f"Deleted row with SKU: {row['sku']} from {schema}.{table}.")
-        else:
-            # Check if the row exists in the target table
-            check_sql = f"""
-            SELECT record_id FROM {schema}.{table} WHERE sku = %s;
-            """
-            cur.execute(check_sql, (row["sku"],))
-            existing_row = cur.fetchone()
+    with closing(get_db_connection()) as conn:  # noqa: SIM117 -- show each lifecycle step
+        # Commit on success; roll back the whole batch if any row fails.
+        with conn:
+            with conn.cursor() as cursor:
+                create_table(cursor, schema)
+                for _, row in products.iterrows():
+                    insert_rows(cursor, schema, row)
 
-            if existing_row is not None:
-                delete_sql = f"""
-                DELETE FROM {schema}.{table} WHERE sku = %s;
-                """
-                cur.execute(delete_sql, (row["sku"],))
-                conn.commit()
-
-                logger.info(f"Deleted row with SKU: {row['sku']} from {schema}.{table}.")
-            else:
-                logger.warning(f"Row with SKU: {row['sku']} does not exist in {schema}.{table}. Skipping deletion.")
-    except Exception as e:
-        logger.error(f"Error deleting row with SKU: {row['sku']} from {schema}.{table}: {e}")
+    return len(products)

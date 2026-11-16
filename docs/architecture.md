@@ -22,6 +22,11 @@ deduplicate_products()
 
 The Airflow DAG in `dags/products_elt_dag.py` orchestrates these stages and
 writes the cleaned data and duplicate audit to `dataset/processed/`.
+It also populates PostgreSQL warehouse tables in this task order:
+
+```text
+extract → update_staging → transform → load → update_core
+```
 
 The stages are separate calls. `clean_products()` does not automatically call
 `deduplicate_products()`.
@@ -62,7 +67,51 @@ invalid-value handling, date parsing, and duplicate-SKU selection.
 ### `dags/products_elt_dag.py`
 
 The Airflow TaskFlow DAG validates the raw CSV, runs the cleaning and
-deduplication helpers, and verifies the processed output files.
+deduplication helpers, verifies the processed output files, and invokes the
+warehouse loaders. It imports `dag` and `task` from the Airflow 3 public
+interface, `airflow.sdk`.
+
+### `dags/datawarehouse/data_loading.py`
+
+Provides a configuration-driven CSV loader without importing Airflow:
+
+- `load_path(config_path="config.json")` reads a UTF-8 JSON object and requires
+  a non-empty string named `raw_product_csv_path`. Relative CSV paths are
+  resolved against the configuration file's directory.
+- `load_data(config_path="config.json")` calls `load_path()` and reuses
+  `src.ingestion.load_products()` to return a validated pandas dataframe.
+- Loading preserves the ingestion rules above; it does not clean, deduplicate,
+  write output files, or insert records into PostgreSQL.
+
+`load_data(csv_path=...)` also accepts a CSV path directly. The warehouse tasks
+use this option with the container dataset path, so the DAG needs no JSON
+configuration. Business logic in `src/` remains separate from scheduling and
+task dependencies.
+
+### Warehouse helpers
+
+- `dwh.py` coordinates the other warehouse modules through `staging_table()`
+  and `core_table()`. Both return the number of processed rows.
+- `data_transformation.py` calls the existing cleaning and deduplication
+  functions from `src/transformation.py`.
+- `data_utils.py` connects through Airflow's `postgres_db_yt_elt` connection
+  (configured by Compose) and creates schemas and product tables.
+- `data_modification.py` validates warehouse keys and uses explicit staging
+  and core SQL to insert or update rows. Each batch commits as one transaction;
+  failures propagate and roll back. Missing pandas values become SQL NULL.
+
+`staging.products` stores raw observations, identified by a unique
+`source_record_id` copied from the CSV's `record_id`. Duplicate SKUs can have
+separate staging observations. Price and stock remain text.
+
+`core.products` stores cleaned, deduplicated products, identified by unique
+SKU, with numeric prices and integer stock. Both tables have a generated
+database `record_id`. Repeat loads update matching keys; rows absent from the
+input remain in the database.
+
+Core currently reloads and transforms the raw CSV; it does not read staging
+or the processed CSV. The task dependency ensures staging finishes first.
+Only SKU, name, category, price, and stock are stored as product fields.
 
 ### `.github/workflows/ci.yml`
 
@@ -71,5 +120,8 @@ and locked uv dependencies, then runs pytest and Ruff.
 
 ## Current boundaries
 
-Validation-issue reporting, database loading, and production scheduling remain
-future work.
+Validation-issue reporting and production scheduling remain future work.
+Warehouse code is covered by unit tests, but live PostgreSQL loading still
+requires verification. Existing tables created by the earlier helper schema
+need a migration: `CREATE TABLE IF NOT EXISTS` does not alter their columns
+or add the new unique constraints.

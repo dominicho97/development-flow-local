@@ -21,6 +21,38 @@ uv add --dev <package>
 
 ## Local checks
 
+### Configuration-driven CSV loading
+
+`dags/datawarehouse/data_loading.py` can load the raw CSV using a JSON
+configuration. For example, create `config.json` at the repository root:
+
+```json
+{
+  "raw_product_csv_path": "dataset/raw/products.csv"
+}
+```
+
+Run from the repository root:
+
+```powershell
+uv run python -c "from dags.datawarehouse.data_loading import load_data; print(load_data('config.json').head())"
+```
+
+`load_data()` returns a validated pandas dataframe using the existing ingestion
+function. The configuration must be a JSON object with a non-empty string
+path. Relative CSV paths are resolved beside the configuration file, rather
+than against the process's working directory. The configuration path itself
+is relative to the working directory unless supplied as an absolute path.
+
+Missing configuration or CSV files raise `FileNotFoundError`; malformed JSON,
+invalid path values, and invalid CSV data fail explicitly. No default
+`config.json` is supplied. When used inside Docker, the configuration and CSV
+must both be accessible inside the container. Alternatively, call
+`load_data(csv_path="dataset/raw/products.csv")` to skip JSON configuration.
+The DAG's warehouse tasks use this direct-path option.
+
+### Test and lint commands
+
 Run the full test suite:
 
 ```powershell
@@ -191,15 +223,40 @@ the JWT secret can also require logging back into the UI.
    `./dataset:/opt/airflow/dataset` for the Airflow services.
 2. Open `http://localhost:8080`, log in, and find `products_elt`.
 3. Unpause the DAG and trigger a manual run; it has no automatic schedule.
-4. Confirm `extract`, `transform`, and `load` all succeed.
+4. Confirm `extract`, `update_staging`, `transform`, `load`, and `update_core`
+   all succeed, in that order.
 5. Verify the persisted files on the host:
 
 ```powershell
 Get-ChildItem dataset/processed
 ```
 
-Expect `products_clean.csv` and `products_duplicates.csv`. The final `load`
-task verifies these files exist; it does not load records into PostgreSQL.
+Expect `products_clean.csv` and `products_duplicates.csv`. The `load` task
+verifies these files exist. The separate `update_staging` and `update_core`
+tasks populate PostgreSQL using the `postgres_db_yt_elt` Airflow connection
+provided by Compose.
+
+Verify row counts in the ELT database with your SQL client:
+
+```sql
+SELECT COUNT(*) FROM staging.products;
+SELECT COUNT(*) FROM core.products;
+SELECT * FROM core.products LIMIT 10;
+```
+
+Staging retains raw observations by source record ID; core retains cleaned,
+deduplicated products by SKU. Reruns update matching keys without deleting
+rows absent from the input. Core reads the raw CSV and applies the shared
+transformation functions again; it does not query staging.
+
+Existing tables from the earlier schema need a migration before loading:
+staging requires a unique `source_record_id`, and core requires unique `sku`.
+Table creation does not upgrade existing tables. Do not delete the PostgreSQL
+volume to work around a schema mismatch.
+
+The warehouse changes passed unit tests and lint checks; confirm live database
+loading with a fresh DAG run. For local tests, use `uv run python -m pytest
+tests -q` to avoid collecting files under Airflow's generated log directories.
 
 ### Diagnose task startup failures
 

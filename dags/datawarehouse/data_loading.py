@@ -32,6 +32,10 @@ def load_path(config_path: str | Path = "config.json") -> str:
     return str(path.resolve())
 
 
-def load_data(config_path: str | Path = "config.json") -> pd.DataFrame:
+def load_data(
+    config_path: str | Path = "config.json", *, csv_path: str | Path | None = None
+) -> pd.DataFrame:
     """Load and validate the product CSV specified by the configuration."""
+    if csv_path is not None:
+        return load_products(csv_path)
     return load_products(load_path(config_path))

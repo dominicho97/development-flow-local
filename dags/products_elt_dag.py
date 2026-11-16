@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import pendulum
-from airflow.decorators import dag, task
-
+from airflow.sdk import dag, task
+from datawarehouse.dwh import core_table, staging_table
 
 from src.ingestion import load_products
 from src.transformation import clean_products, deduplicate_products
@@ -53,7 +53,24 @@ def products_elt_dag():
                     f"Expected output file was not created: {output_file}"
                 )
 
-    load(transform(extract()))
+    @task
+    def update_staging(raw_file: str) -> int:
+        """Insert or update raw observations in staging.products."""
+        return staging_table(csv_path=raw_file)
+
+    @task
+    def update_core(raw_file: str) -> int:
+        """Insert or update cleaned, deduplicated products in core.products."""
+        return core_table(csv_path=raw_file)
+
+    raw_file = extract()
+    staging = update_staging(raw_file)
+    outputs = transform(raw_file)
+    verified = load(outputs)
+    core = update_core(raw_file)
+
+    staging >> outputs
+    verified >> core
 
 
 products_elt_dag()
