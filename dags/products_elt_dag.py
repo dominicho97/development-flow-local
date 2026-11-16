@@ -3,6 +3,7 @@ from pathlib import Path
 import pendulum
 from airflow.decorators import dag, task
 
+
 from src.ingestion import load_products
 from src.transformation import clean_products, deduplicate_products
 
