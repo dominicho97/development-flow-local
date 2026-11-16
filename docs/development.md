@@ -77,6 +77,17 @@ from the pull request's Checks tab or the repository's Actions tab.
 
 ## Docker and Airflow
 
+Before starting the stack, set `AIRFLOW_JWT_SECRET` in your local `.env` to a
+random secret. Generate one with the managed Python environment:
+
+```powershell
+uv run python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Copy the output into `.env` as `AIRFLOW_JWT_SECRET=<generated value>`. Keep
+this value stable across restarts and keep `.env` out of commits. Compose
+requires this variable and passes it to the Airflow services.
+
 Build and start the local stack with Docker Desktop:
 
 ```powershell
@@ -139,3 +150,75 @@ Enter a password when prompted, then log in at `http://localhost:8080`.
 These recovery steps preserve the PostgreSQL volume. If the attribute error
 persists with FAB active, inspect the API server logs and installed Airflow/FAB
 provider versions before making further changes.
+
+### Execution API configuration
+
+For this Airflow 3.4 setup, a working UI does not by itself verify that Celery
+tasks can start. The scheduler sends work through Redis, and the worker must
+also reach the execution API and present a valid task token.
+
+The shared Compose environment configures:
+
+```yaml
+AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-api-server:8080/execution/'
+AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?Set AIRFLOW_JWT_SECRET in .env}
+```
+
+The URL uses the Compose service name: `localhost` inside the worker refers to
+the worker container. The scheduler and API server must share the same JWT
+signing secret so the API can validate task tokens. This secret is separate
+from the UI account password and Fernet key.
+
+The API server health check uses
+`http://localhost:8080/api/v2/monitor/health`. The old `/health` path returned
+404 and marked the API container unhealthy even while the UI was available.
+
+After changing shared configuration or the JWT secret, recreate the services:
+
+```powershell
+docker compose up -d --force-recreate
+docker compose exec airflow-worker airflow config get-value core execution_api_server_url
+docker compose ps
+```
+
+Confirm the execution URL matches the service URL above and the API server
+becomes healthy. Trigger a new DAG run to obtain fresh task tokens. Changing
+the JWT secret can also require logging back into the UI.
+
+### Run and verify products_elt
+
+1. Ensure `dataset/raw/products.csv` exists on the host. Compose mounts
+   `./dataset:/opt/airflow/dataset` for the Airflow services.
+2. Open `http://localhost:8080`, log in, and find `products_elt`.
+3. Unpause the DAG and trigger a manual run; it has no automatic schedule.
+4. Confirm `extract`, `transform`, and `load` all succeed.
+5. Verify the persisted files on the host:
+
+```powershell
+Get-ChildItem dataset/processed
+```
+
+Expect `products_clean.csv` and `products_duplicates.csv`. The final `load`
+task verifies these files exist; it does not load records into PostgreSQL.
+
+### Diagnose task startup failures
+
+The executor message reporting a failed task whose state is still `queued`
+is a symptom. Inspect the worker log for the underlying error:
+
+```powershell
+docker compose logs --since 5m --tail 100 airflow-worker
+docker compose logs --since 5m --tail 100 airflow-api-server
+docker compose ps
+```
+
+In this setup we resolved these failures:
+
+| Symptom | Cause and resolution |
+| --- | --- |
+| `ConnectError: [Errno 111] Connection refused` before task startup | Configure the execution API URL with the API server's Compose service name. |
+| `ServerResponseError: Invalid auth token` after connectivity was fixed | Configure the same JWT secret for the scheduler and API server, recreate services, and trigger a fresh run. |
+| API server unhealthy with `/health` returning 404 | Update the health-check path to `/api/v2/monitor/health`. |
+
+The products DAG ran successfully after these configuration fixes. No
+PostgreSQL volume deletion was needed.

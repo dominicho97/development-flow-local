@@ -95,6 +95,10 @@ silently discarded.
 
 ## Docker and Airflow
 
+Follow the [Airflow setup and DAG verification guide](docs/development.md#docker-and-airflow)
+to configure the required `AIRFLOW_JWT_SECRET` in `.env` before startup and
+verify a successful `products_elt` run.
+
 Docker Desktop is required. Build the image and start the stack:
 
 ```powershell

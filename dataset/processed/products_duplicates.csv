@@ -1,0 +1,9 @@
+record_id,sku,product_name,category,brand,origin_country,package_size,listed_price,currency,stock_qty,last_seen,is_active,record_source,selected_as_latest
+R-0003,SYN-0003,Rice Vermicelli,Rice & Noodles,Green Bamboo,VN,400 g,2.19,EUR,48,2026-10-23,True,synthetic_practice,False
+R-0011,SYN-0011,Light Soy Sauce,Sauces & Condiments,Jade Kitchen,CN,500 ml,3.29,EUR,27,2026-10-31,True,synthetic_practice,False
+R-0019,SYN-0019,Sweet Chili Sauce,Sauces & Condiments,Green Bamboo,TH,700 ml,3.69,EUR,29,2026-10-25,True,synthetic_practice,True
+R-0024,SYN-0024,Kimchi,Frozen,Moonlight Foods,KR,"0,5kg",5.99,EUR,20,2026-10-30,True,synthetic_practice,False
+R-0053,SYN-0011,Light soy sauce,Sauces & Condiments,Jade Kitchen,CN,500 ml,3.39,EUR,27,2026-11-03,True,synthetic_practice,True
+R-0054,SYN-0024,Kimchi,Frozen,Moonlight Foods,KR,"0,5kg",5.89,EUR,20,2026-11-03,True,synthetic_practice,True
+R-0055,SYN-0003,rice vermicelli,Rice & Noodles,Green Bamboo,VN,400 g,2.19,EUR,48,2026-11-02,True,synthetic_practice,True
+R-0019,SYN-0019,Sweet Chili Sauce,Sauces & Condiments,Green Bamboo,TH,700 ml,3.69,EUR,29,2026-10-25,True,synthetic_practice,False

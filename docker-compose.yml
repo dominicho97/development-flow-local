@@ -56,6 +56,10 @@ x-airflow-common:
     &airflow-common-env
     # Set executor to CeleryExecutor 
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    # Scheduler and API server must sign and validate tokens with the same key.
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?Set AIRFLOW_JWT_SECRET in .env}
+    # Workers reach the execution API through the Compose service network.
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-api-server:8080/execution/'
     # Use SQLAlchemy to connect to Airflow's metadata Postgres database using the psycopg2 driver
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${METADATA_DATABASE_USERNAME}:${METADATA_DATABASE_PASSWORD}@${POSTGRES_CONN_HOST}:${POSTGRES_CONN_PORT}/${METADATA_DATABASE_NAME}
     # Postgres database backend for storing task results executed by workers
@@ -167,7 +171,7 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
       interval: 30s
       timeout: 10s
       retries: 5
