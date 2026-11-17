@@ -1,0 +1,26 @@
+# Used only with COMPOSE_FILE=docker-compose.yml:docker-compose.ci.yml in CI.
+x-ci-image: &ci-image
+  image: ${CI_TEST_IMAGE:?Set CI_TEST_IMAGE}
+  pull_policy: never
+  restart: "no"
+
+services:
+  postgres:
+    restart: "no"
+  redis:
+    restart: "no"
+  airflow-api-server:
+    <<: *ci-image
+  airflow-dag-processor:
+    <<: *ci-image
+  airflow-scheduler:
+    <<: *ci-image
+  airflow-worker:
+    <<: *ci-image
+    environment:
+      # One task waits for the child DAG, so reserve capacity for child work.
+      AIRFLOW__CELERY__WORKER_CONCURRENCY: "2"
+  airflow-init:
+    <<: *ci-image
+  airflow-cli:
+    <<: *ci-image

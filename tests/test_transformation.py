@@ -45,6 +45,9 @@ def test_clean_products_removes_whitespace():
         pytest.param("", None, id="empty"),
         pytest.param("N/A", None, id="missing-value"),
         pytest.param("invalid", None, id="invalid-text"),
+        pytest.param("-3.49", None, id="negative-price"),
+        pytest.param("EUR -2,99", None, id="negative-currency-price"),
+        pytest.param("0", 0.0, id="zero-price"),
     ],
 )
 def test_clean_price(raw, expected):

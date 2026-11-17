@@ -149,8 +149,14 @@ Only SKU, name, category, price, and stock are stored as product fields.
 
 ### `.github/workflows/ci.yml`
 
-The CI workflow runs on pull requests targeting `main`. It installs Python 3.12
-and locked uv dependencies, then runs pytest and Ruff.
+The workflow validates PRs to `main`, main pushes, version tags, and manual
+dispatches. A fast job runs local pytest, Ruff, and actionlint. A second job
+builds runtime/test images and validates real DagBag imports, PostgreSQL
+connectivity, and the orchestration E2E flow on a disposable Compose stack.
+It also generates an SBOM and gates fixable HIGH/CRITICAL image vulnerabilities.
+On version-tag pushes, a separate job publishes the already validated runtime
+image to GHCR and attests its provenance. Deployment remains outside the
+workflow. See [CI and releases](ci-cd.md).
 
 ## Current boundaries
 

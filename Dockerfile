@@ -1,10 +1,11 @@
 ARG AIRFLOW_VERSION=3.4.0
 ARG PYTHON_VERSION=3.12
 ARG UV_VERSION=0.13.7
+ARG TEST_RUNTIME_IMAGE=runtime
 
 FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
-FROM apache/airflow:${AIRFLOW_VERSION}-python${PYTHON_VERSION}
+FROM apache/airflow:${AIRFLOW_VERSION}-python${PYTHON_VERSION} AS runtime
 
 ARG AIRFLOW_VERSION
 
@@ -70,3 +71,19 @@ RUN soda --version \
 # Make the repository modules available to Airflow tasks.
 COPY --chown=airflow:root src ./src
 COPY --chown=airflow:root dataset ./dataset
+COPY --chown=airflow:root dags /opt/airflow/dags
+COPY --chown=airflow:root include /opt/airflow/include
+
+# CI extends the runtime with locked test tools; release images exclude them.
+FROM ${TEST_RUNTIME_IMAGE} AS test
+ENV PYTHONPATH=/opt/airflow:/opt/airflow/project
+RUN uv export --frozen --only-group dev --no-emit-project \
+        --format requirements.txt --output-file /tmp/test-requirements.txt \
+    && uv pip install --no-cache --python "${VIRTUAL_ENV}/bin/python" \
+        --requirement /tmp/test-requirements.txt \
+    && rm /tmp/test-requirements.txt
+COPY --chown=airflow:root tests /opt/airflow/tests
+COPY --chown=airflow:root pyproject.toml /opt/airflow/pyproject.toml
+
+# Keep the default docker build output suitable for release.
+FROM runtime AS production

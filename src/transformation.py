@@ -94,7 +94,8 @@ def clean_price(value: str) -> float | None:
         return None
 
     try:
-        return float(value)
+        price = float(value)
+        return price if price >= 0 else None
     except ValueError:
         return None
 

@@ -34,8 +34,8 @@ The repository documents both the technical implementation and the engineering p
   rows for audit.
 - Run Soda quality gates after staging and core loads: seven staging checks
   and 11 core checks covering schema, completeness, uniqueness, and validity.
-- Run automated tests and Ruff checks in GitHub Actions for pull requests to
-  `main`.
+- Validate code, Docker builds, Airflow DAGs, PostgreSQL, and full pipeline runs
+  in GitHub Actions, with image vulnerability gates and version-tag publishing.
 
 ## Requirements
 
@@ -134,6 +134,7 @@ if you intentionally want to delete the database volume.
 - [Data cleaning](docs/data-cleaning.md) — transformation rules and limitations
 - [Data quality](docs/data-quality.md) — Soda setup, scan commands, checks, and known failures
 - [Development](docs/development.md) — workflow, checks, and CI
+- [CI and releases](docs/ci-cd.md) — full Airflow validation, security gates, and versioned image publishing
 
 The [test guide](docs/development.md#using-conftestpy-and-unit_testpy) explains
 shared fixtures, the mocked connection test, and optional DagBag validation.
@@ -142,8 +143,8 @@ The DAG integrity test requires no import errors, exactly `products_elt`
 Airflow is unavailable.
 The PostgreSQL connection integration test is opt-in with `--run-integration`
 and closes its cursor and connection after use. It requires an Airflow-capable
-environment and a reachable warehouse database; ordinary local and CI runs
-skip it.
+environment and a reachable warehouse database; ordinary local pytest skips
+it, while the CI Airflow job explicitly runs it against a disposable database.
 
 An opt-in [end-to-end test](docs/development.md#end-to-end-airflow-test) can
 trigger `products_pipeline` on the live Docker Compose stack and verify its

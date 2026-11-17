@@ -31,8 +31,9 @@ decimal separators, and returns a float for parseable values. Empty values,
 `N/A`, malformed values, and values with multiple decimal points become
 `None`.
 
-Negative and zero prices are not rejected by the current cleaner; they remain
-numeric values and require a future validation rule.
+Negative prices become `None` so that core stores SQL `NULL`; zero is valid.
+This rule also applies to generated cleaned CSV output. Soda continues to
+require every present core price to be nonnegative.
 
 ### Stock
 
