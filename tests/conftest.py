@@ -36,3 +36,15 @@ def mock_postgres_hook(monkeypatch):
     module.PostgresHook = hook
     monkeypatch.setitem(sys.modules, module_name, module)
     return hook
+
+@pytest.fixture
+def test_real_postgres_connection():
+    """Return a real connection to the warehouse's PostgreSQL database.
+
+    This fixture is only for tests that need to verify the warehouse's
+    actual database state. It is not used by default, because it requires
+    a running PostgreSQL container and can be slow.
+    """
+    from dags.datawarehouse.data_utils import get_db_connection
+
+    return get_db_connection()
