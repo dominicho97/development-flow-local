@@ -109,6 +109,19 @@ uv run python -m pytest tests -q
 ```
 
 Use `tests` explicitly to avoid collecting generated Airflow log directories.
+The `dagbag` fixture in `conftest.py` loads repository DAGs with examples
+disabled and adds the repository and DAG directories to the test import path.
+`test_products_dag_loads_with_quality_gates` verifies there are no DAG import
+errors and that both quality gates have the expected task dependencies. It
+loads DAG definitions without executing tasks or scanning PostgreSQL.
+This test is skipped when Airflow is not installed; run it with pytest in an
+environment containing the project's Airflow version and providers to exercise
+the real DAG loader:
+
+```powershell
+uv run python -m pytest tests/unit_test.py::test_products_dag_loads_with_quality_gates -v
+```
+
 For real PostgreSQL quality checks, trigger `products_elt` and inspect
 `check_staging_quality` and `check_core_quality`, as described in the
 [data quality guide](data-quality.md).
