@@ -7,14 +7,19 @@ The `products_elt` DAG runs scans against both `staging.products` and
 
 ## Airflow quality gates
 
+The full CI E2E run, including both quality tasks, was confirmed passing on
+2026-11-17. The earlier failures below are historical examples of the gates
+catching data issues, not the expected result of the current pipeline.
+
 The task sequence is `extract -> update_staging -> check_staging_quality ->
 transform -> load -> update_core -> check_core_quality`.
 `dags/dataquality/soda.py` runs the isolated Soda executable as a subprocess,
 streams its output to task logs, and propagates nonzero exit codes to Airflow.
 A failed staging scan blocks downstream processing; a failed core scan marks
 the run unsuccessful after the core load has committed. Scans do not roll back
-loaded data. The previously observed blank name and negative price will fail
-the core task until the data or handling rules are corrected.
+loaded data. Blank names are now excluded from core and negative prices become
+SQL NULL; raw observations remain in staging. These rules preserve the checks
+and were validated by the passing E2E run.
 
 Staging uses `postgres_staging` and `include/soda/checks_staging.yml` for seven
 checks: expected columns and raw text types, a nonempty table, present/unique/
@@ -99,15 +104,15 @@ The checks use Soda's documented [schema checks](https://docs.soda.io/soda-docum
 [missing metrics](https://docs.soda.io/soda-documentation/soda-v3/sodacl-reference/missing-metrics),
 and [validity metrics](https://docs.soda.io/soda-documentation/soda-v3/sodacl-reference/validity-metrics).
 
-## Latest observed scan and investigation
+## Earlier scan failures and their resolution
 
 On 2026-11-17 the E2E run reached core quality and reported 10/11 checks
 passing: price validity passed, but one blank product name remained. The
 current code now filters missing/blank names after deduplication, logs skipped
 products, and rejects blank names at the core writer boundary. Each core load
 also removes existing null or whitespace-only names in the upsert transaction;
-raw staging rows are preserved. Rerun the full DAG to apply the repair, then
-verify the core scan. Rerunning only the scan does not change stored data.
+raw staging rows are preserved. Subsequent full CI E2E runs passed, confirming
+both scan layers after the repairs. Rerunning only a scan never changes stored data.
 
 The initial four checks passed. After expanding to 11 checks, the local scan
 on 2026-11-16 reported **9 passed, 2 failed, 0 warnings, and 0 errors**:
@@ -120,16 +125,17 @@ The automated Airflow run was also verified on 2026-11-16. All tasks before
 local time, the core task logged the same 9 passing and 2 failing checks and
 raised `CalledProcessError` for Soda exit status 2. Only the core quality task
 failed. This confirms that both scans execute from the DAG and that a quality
-failure propagates to Airflow. The run is expected to remain failed with the
-current data; it is not a fully passing pipeline run.
+failure propagates to Airflow. Later repairs resolved those failures without
+weakening the quality checks.
 
-Unit verification passed 73 tests, including scan routing, nonzero exit
-propagation, unsupported-layer validation, and missing-configuration handling.
-Ruff lint and formatting checks passed for the changed Python files.
+Tests cover scan routing, nonzero exit propagation, unsupported-layer validation,
+and missing-configuration handling. See [CI status](ci-cd.md#verification-status)
+for the current verification record.
 
 These are data quality failures, rather than installation or connection
-errors. They remain unresolved; no cleanup or quarantine behavior has been
-implemented for these records. Investigate in the ELT database with a SQL client:
+errors. The implemented handling skips and logs blank-name products and maps
+negative prices to missing values. Staging remains available for investigation;
+there is no separate quarantine table. Use this query to investigate regressions:
 
 ```sql
 SELECT record_id, sku, product_name, listed_price
@@ -139,11 +145,11 @@ WHERE product_name IS NULL
    OR listed_price < 0;
 ```
 
-Decide the intended handling before changing data or transformation rules.
-The current price cleaner accepts parseable negative numbers, and blank
-product names can remain empty strings. PostgreSQL `NOT NULL` does not reject
-an empty string. Warehouse upserts also retain products absent from later
-inputs, so a later load alone does not guarantee removal of an affected row.
+The price cleaner rejects negative numbers; core filtering excludes blank names
+after choosing the latest observation per SKU. PostgreSQL `NOT NULL` alone
+does not reject empty strings. The core writer explicitly removes existing
+blank-name rows in its upsert transaction; ordinary products absent from a
+later input otherwise remain in the database.
 
 ## Troubleshooting
 

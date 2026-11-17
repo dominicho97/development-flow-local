@@ -144,10 +144,9 @@ uv run python -m pytest tests/unit_test.py::test_dag_integrity -v
 uv run python -m pytest tests/unit_test.py::test_products_dag_loads_with_quality_gates -v
 ```
 
-The latest targeted verification collected three tests in `unit_test.py`:
-the mocked connection test passed, and both DagBag tests skipped because
-Airflow is absent locally. Lint and formatting checks passed. Actual DagBag
-integrity assertions still need execution in an Airflow-capable environment.
+DagBag tests skip on the local host when Airflow is absent. They have now
+passed inside the Airflow image in CI, including the exact DAG/task-count and
+trigger-operator checks. See [CI status](ci-cd.md#verification-status).
 
 For real PostgreSQL quality checks, trigger `products_elt` and inspect
 `check_staging_quality` and `check_core_quality`, as described in the
@@ -183,7 +182,7 @@ uv run python -m pytest tests/integration_test.py --run-integration -v
 uv run python -m pytest tests -m integration --run-integration -v
 ```
 
-These invocations have not yet been verified against a live database. The
+The database integration test has passed against the disposable CI database. The
 plain local uv environment does not install Airflow; the option enables tests
 but does not install their runtime or configure credentials. When explicitly
 enabled, missing dependencies or an unreachable database fail the test.
@@ -246,8 +245,14 @@ logs remain in Airflow for inspection; a timeout does not cancel the run.
 
 E2E tests skip unless `--run-e2e` is supplied. This flag is independent from
 `--run-integration`: the latter enables the direct database connection test,
+<<<<<<< Updated upstream
 which requires an Airflow-capable Python environment. Default CI runs enable
 neither. No live E2E run has yet been verified from this development session.
+=======
+which requires an Airflow-capable Python environment. CI enables the database
+test inside the Airflow test image and E2E on the runner host. The expanded CI
+workflow has passed live execution; see [CI and releases](ci-cd.md).
+>>>>>>> Stashed changes
 
 The test uses Airflow's documented [CLI trigger and task-state commands](https://airflow.apache.org/docs/apache-airflow/stable/cli-ref.html).
 
@@ -290,6 +295,11 @@ The workflow has read-only repository contents permission. Review the result
 from the pull request's Checks tab or the repository's Actions tab.
 
 ## Docker and Airflow
+
+Local host ports bind to loopback only: Airflow is at `127.0.0.1:8080` and
+PostgreSQL at `127.0.0.1:5432`. Recreate existing containers to apply changed
+bindings. See the [security review](security-review.md) before exposing the
+stack or changing repository visibility.
 
 For the current Soda setup, the 11 PostgreSQL checks, scan commands, and known
 data failures, see [PostgreSQL data quality checks](data-quality.md).
@@ -430,17 +440,19 @@ the JWT secret can also require logging back into the UI.
 
 1. Ensure `dataset/raw/products.csv` exists on the host. Compose mounts
    `./dataset:/opt/airflow/dataset` for the Airflow services.
-2. Open `http://localhost:8080`, log in, and find `products_elt`.
-3. Unpause the DAG and trigger a manual run; it has no automatic schedule.
+2. Open `http://localhost:8080`, log in, and find both product DAGs.
+3. Unpause `products_pipeline` and `products_elt`, then manually trigger
+   `products_pipeline`; neither DAG has an automatic schedule.
 4. Confirm `extract`, `update_staging`, `check_staging_quality`, `transform`,
    `load`, `update_core`, and `check_core_quality`
-   execute in that order. With the currently observed data, all tasks through
-   `update_core` succeed and `check_core_quality` fails as described below.
+   succeed in that order. The parent trigger task should also succeed after
+   the child finishes. This complete path has passed in CI.
 5. Verify the persisted files on the host:
 
-The core quality task currently detects a blank product name and a negative
-price in the observed dataset. Until those issues are resolved, expect that
-task to fail; inspect its Soda output in the task log. See the
+Earlier core scans detected a blank product name and a negative price. The
+cleaning and core-load fixes now handle those records, and both quality gates
+have passed in E2E. Investigate any new failure rather than treating it as
+expected. See the
 [quality guide](data-quality.md) for investigation SQL and layer-specific rules.
 
 ```powershell
@@ -471,12 +483,11 @@ staging requires a unique `source_record_id`, and core requires unique `sku`.
 Table creation does not upgrade existing tables. Do not delete the PostgreSQL
 volume to work around a schema mismatch.
 
-The warehouse DAG was confirmed successful locally on 2026-11-16 before
-quality gates were added. The subsequent automated run verified both quality
-tasks: staging passed, and only core quality failed on the two known data
-issues. The core log reported 9/11 passing checks and Soda exit status 2,
-propagated as `CalledProcessError`. The latest code checks passed 73 tests;
-Ruff lint and formatting checks passed for the changed Python files.
+The original quality failures proved that Soda exit status 2 propagates to
+Airflow. After the cleaning, permissions, and dependency fixes, the complete
+CI pipeline was confirmed passing on 2026-11-17, including both quality tasks
+and the vulnerability gate. Latest local verification passed 90 tests with
+5 environment/opt-in skips; lint and workflow validation passed.
 Run local tests with:
 
 ```powershell

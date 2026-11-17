@@ -1,23 +1,34 @@
 # Development Flow — From Code to Production
 
-**A hands-on project exploring professional software development practices through an end-to-end Python data engineering pipeline.**
+A hands-on data engineering project for learning how software becomes reliable,
+testable, and ready to release through a professional development workflow.
 
-Writing working code is only one part of software engineering. Building reliable, maintainable and production-ready systems also requires version control, automated testing, code reviews, CI/CD, containerization and deployment practices.
+**Issue → Branch → Implementation → Tests → Pull Request → CI → Review → Merge**
 
-This project puts those practices into action by developing a realistic data pipeline incrementally, following a professional development workflow:
+The pipeline ingests a product CSV, preserves raw observations in PostgreSQL
+staging, and loads cleaned, deduplicated products into core. Airflow coordinates
+the work; Soda validates both database layers.
 
-**GitHub Issue → Feature Branch → Implementation → Testing → Pull Request → CI → Code Review → Merge**
+**Status:** the full CI validation pipeline, including end-to-end execution and
+the image security gate, has passed. Versioned image publishing is configured;
+deployment is intentionally outside the current scope.
 
-## What This Project Demonstrates
+## What we learned
 
-- **Software Development:** Modular Python code, Git workflows, feature branches, meaningful commits and Pull Requests.
-- **Quality Engineering:** Unit testing with pytest, code quality enforcement with Ruff and automated CI using GitHub Actions.
-- **Data Engineering:** CSV ingestion, data cleaning, transformation and validation using pandas.
-- **AI-Assisted Development:** Using coding agents to implement scoped tasks while maintaining human review and verification.
-- **Production Engineering (Roadmap):** PostgreSQL, Docker, Airflow, integration testing and deployment automation.
+- Working code is only the start: reproducible environments, review, testing,
+  and container builds make changes dependable.
+- Unit tests, real service integration, and end-to-end runs catch different
+  problems. A passing unit suite alone cannot validate an Airflow deployment.
+- Data quality rules need explicit business decisions. Preserve raw evidence,
+  handle invalid records deliberately, and fail the pipeline on violated rules.
+- Dependency resolution does not guarantee runtime compatibility. Test the
+  imports and execution paths the application actually uses.
+- Security findings need investigation: update real vulnerable dependencies,
+  reconcile stale inventories, and document narrowly verified exceptions.
 
-## Project Philosophy
+## Get started
 
+<<<<<<< Updated upstream
 The goal isn't simply to build a working ETL pipeline. It's to understand **how software evolves from a local implementation into a reliable, testable and maintainable system**.
 
 Each feature is developed through a dedicated issue and branch, validated with automated tests, reviewed through a Pull Request and integrated into the main codebase.
@@ -45,29 +56,43 @@ The repository documents both the technical implementation and the engineering p
 ## Setup
 
 From the repository root:
+=======
+Use Python 3.12 and [uv](https://docs.astral.sh/uv/):
+>>>>>>> Stashed changes
 
 ```powershell
-uv python install 3.12
-uv sync
+uv sync --locked
+uv run pytest -q
 ```
 
-The project uses `.python-version`, `pyproject.toml`, and `uv.lock` to keep the
-Python version and dependencies reproducible.
+For the local Airflow stack, follow the [setup guide](docs/development.md#docker-and-airflow).
+Once running, open `http://localhost:8080`, unpause both product DAGs, and
+trigger **`products_pipeline`**.
 
-## Quick start
+## Agent handover
 
-Preview the default dataset:
+Read [AGENTS.md](AGENTS.md) first. Use `uv` for Python operations and keep
+`pyproject.toml` and `uv.lock` synchronized.
 
-```powershell
-uv run python src\ingestion.py
-```
+| Area | Stack / entry points |
+| --- | --- |
+| Runtime | Python 3.12, pandas, Airflow 3.4.0, Celery 5.6.x, Redis, PostgreSQL |
+| Quality | Soda Core Postgres 3.5.6 in its own environment; 7 staging and 11 core checks |
+| Code | `src/` for cleaning; `dags/` for orchestration and warehouse helpers; `include/soda/` for checks |
+| Delivery | Docker Compose, GitHub Actions, Trivy, and version-tag publishing to GHCR |
 
-Preview another CSV:
+- `products_pipeline` triggers `products_elt` and propagates failures. Keep
+  both DAGs unpaused; their task-count contracts are in `tests/unit_test.py`.
+- Local tests mock external services. CI also runs real Airflow/database/E2E
+  checks. Linux image dependencies are locked in the `airflow` dependency group.
+- Preserve raw staging data, the Celery compatibility bound, and the security
+  gate. The pip VEX statement requires its runtime verification step.
+- Keep secrets in local `.env`; CI generates disposable credentials. Changes to
+  image dependencies or copied code require rebuilding.
 
-```powershell
-uv run python src\ingestion.py path\to\products.csv
-```
+## Details
 
+<<<<<<< Updated upstream
 Use the cleaning functions from a Python session. Start the uv-managed Python
 REPL first:
 
@@ -167,3 +192,10 @@ The core scan reported 9 of
 11 checks passing, with one blank product name and one negative price requiring
 investigation. Soda now runs automatically after each warehouse layer loads;
 validation-issue reporting remains future work.
+=======
+- [Architecture](docs/architecture.md)
+- [Cleaning rules](docs/data-cleaning.md) and [data quality](docs/data-quality.md)
+- [Development and testing](docs/development.md)
+- [CI, security decisions, and releases](docs/ci-cd.md)
+- [Repository security review and remaining limits](docs/security-review.md)
+>>>>>>> Stashed changes

@@ -154,13 +154,13 @@ and locked uv dependencies, then runs pytest and Ruff.
 
 ## Current boundaries
 
-Validation-issue reporting and production scheduling remain future work.
-Warehouse code is covered by unit tests. A full local Airflow run, including
-staging and core loading, was confirmed successful on 2026-11-16 before quality
-gates were added. The subsequent quality-gated run passed staging and failed
-only core quality: one blank name and one negative price caused Soda exit
-status 2 and an Airflow task failure. Both automated scans are verified;
-remediation and a fully passing quality-gated run remain outstanding.
+Full CI validation was confirmed successful on 2026-11-17: real DAG loading,
+PostgreSQL integration, parent/child execution, both quality gates, and the
+image vulnerability policy passed. Earlier blank-name and negative-price
+failures led to explicit cleaning rules and regression tests. Release image
+publishing is configured but its tag-triggered path is not separately confirmed.
+Deployment, production scheduling, and dedicated validation-issue reporting
+remain outside the implemented scope.
 Existing tables created by the earlier helper schema
 need a migration: `CREATE TABLE IF NOT EXISTS` does not alter their columns
 or add the new unique constraints.
