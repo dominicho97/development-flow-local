@@ -120,11 +120,13 @@ collecting ordinary unit tests does not require Airflow.
 `test_dag_integrity` verifies all of the following:
 
 - No DAG files have import errors; error details appear in assertion output.
-- Exactly one DAG is loaded, with the exact ID `products_elt`. Missing and
+- Exactly two DAGs are loaded: `products_pipeline` and `products_elt`. Missing and
   unexpected DAGs fail the test.
 - `products_elt` contains exactly seven tasks, including both quality gates.
+- `products_pipeline` contains one task, `trigger_products_elt`.
 
-The explicit contract is `expected_tasks_per_dag = {"products_elt": 7}` in
+The explicit contract is
+`expected_tasks_per_dag = {"products_elt": 7, "products_pipeline": 1}` in
 `tests/unit_test.py`. Update this mapping when intentionally adding a DAG or
 changing its task count. Each DAG is checked against its own expected count.
 The separate quality-gate test below verifies dependency relationships;
@@ -191,15 +193,41 @@ the E2E and additional DAG integrity tests were added. Use the current pytest
 summary for up-to-date counts; live database, E2E, and Airflow-dependent DAG
 tests have separate opt-in or dependency requirements as described here.
 
+### TriggerDagRunOperator orchestration
+
+`dags/products_pipeline_dag.py` defines the manual entry point
+`products_pipeline`. Its single `TriggerDagRunOperator` task triggers
+`products_elt` and waits for completion. The seven ETL and Soda tasks remain
+in `products_elt_dag.py`. Both DAGs have `schedule=None` and `max_active_runs=1`.
+
+Unpause **both** DAGs in the UI, then trigger **products_pipeline**. The child
+uses the same run ID as its parent, so matching runs are easy to find. The
+trigger succeeds only if the child succeeds; failed core or staging quality
+also fails the parent. An existing child run is not reset automatically;
+start a new parent run when you want a fresh end-to-end execution.
+
+The trigger polls every 15 seconds and has a 15-minute execution timeout.
+It uses `deferrable=False` because the Compose triggerer is disabled, so it
+occupies a worker slot while waiting. Keep at least two available worker/pool
+slots for the waiting parent and child work. A parent timeout does not cancel
+the child. Direct manual runs of `products_elt` remain possible.
+
+`test_pipeline_triggers_and_waits_for_elt` verifies the operator type, target,
+matching run ID, wait settings, success/failure states, and child concurrency
+limit through DagBag when Airflow is available.
+
+See the official [TriggerDagRunOperator reference](https://airflow.apache.org/docs/apache-airflow-providers-standard/stable/_api/airflow/providers/standard/operators/trigger_dagrun/index.html).
+
 ### End-to-end Airflow test
 
 `tests/test_airflow_e2e.py` runs from the host and uses the Docker Compose CLI
-to trigger `products_elt` through Airflow. It exercises the running scheduler,
+to trigger `products_pipeline`, which launches `products_elt` through Airflow.
+It exercises the running scheduler,
 executor, worker, CSV transformations, PostgreSQL loads, and both Soda scans.
 The host needs Docker and uv, but does not need a local Airflow installation.
 
 Start the Compose stack with the latest built image, wait for healthy services,
-and unpause `products_elt` in the UI. Run this on the local development stack:
+and unpause both `products_pipeline` and `products_elt` in the UI. Run this on the local development stack:
 it performs real warehouse upserts and rewrites processed CSV outputs. Do not
 run another pipeline run concurrently against the shared input/output files.
 
@@ -210,7 +238,8 @@ uv run python -m pytest tests/test_airflow_e2e.py --run-e2e -v -s
 ```
 
 The test prints a unique `e2e__...` run ID, polls for up to ten minutes, requires
-all seven tasks to succeed, and verifies both processed CSV files exist. A
+the parent's trigger task and all seven child tasks to succeed, and verifies
+both processed CSV files exist. A
 failed quality gate fails the test with task states. This is a success-path
 test: known bad core data is not accepted as a passing result. The run and its
 logs remain in Airflow for inspection; a timeout does not cancel the run.

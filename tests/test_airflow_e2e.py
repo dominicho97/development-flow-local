@@ -58,20 +58,38 @@ def test_products_elt_end_to_end():
     """Trigger a unique run and require every task and output file to succeed."""
     assert shutil.which("docker"), "Docker CLI must be available on the host PATH"
     dags = json_rows(airflow("dags", "list", "-o", "json"), "dag_id")
-    dag = next((row for row in dags if row["dag_id"] == "products_elt"), None)
-    assert dag is not None, "products_elt is not loaded; inspect DAG import errors"
-    assert str(dag.get("is_paused")).lower() == "false", (
-        "Unpause products_elt in the UI before running this test"
-    )
+    for dag_id in ("products_pipeline", "products_elt"):
+        dag = next((row for row in dags if row["dag_id"] == dag_id), None)
+        assert dag is not None, f"{dag_id} is not loaded; inspect DAG import errors"
+        assert str(dag.get("is_paused")).lower() == "false", (
+            f"Unpause {dag_id} in the UI before running this test"
+        )
 
     run_id = f"e2e__{uuid4().hex}"
-    print(f"Testing products_elt run {run_id}", flush=True)
-    airflow("dags", "trigger", "products_elt", "-r", run_id)
+    print(f"Testing products_pipeline and products_elt run {run_id}", flush=True)
+    airflow("dags", "trigger", "products_pipeline", "-r", run_id)
     deadline = time.monotonic() + 600
     while time.monotonic() < deadline:
-        output = airflow("dags", "state", "products_elt", run_id)
+        output = airflow("dags", "state", "products_pipeline", run_id)
         states = [line.strip() for line in output.splitlines()]
         if "success" in states or "failed" in states:
+            parent_rows = json_rows(
+                airflow(
+                    "tasks",
+                    "states-for-dag-run",
+                    "products_pipeline",
+                    run_id,
+                    "-o",
+                    "json",
+                ),
+                "task_id",
+            )
+            assert "success" in states, (
+                f"Parent run {run_id} failed: {parent_rows}; inspect child products_elt"
+            )
+            assert {row["task_id"]: row["state"] for row in parent_rows} == {
+                "trigger_products_elt": "success"
+            }
             rows = json_rows(
                 airflow(
                     "tasks", "states-for-dag-run", "products_elt", run_id, "-o", "json"

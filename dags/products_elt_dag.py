@@ -20,6 +20,8 @@ DUPLICATES_FILE = PROCESSED_DIR / "products_duplicates.csv"
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
     schedule=None,
     catchup=False,
+    # Shared CSV outputs and warehouse writes must not overlap between runs.
+    max_active_runs=1,
     tags=["products", "elt"],
 )
 def products_elt_dag():
@@ -83,7 +85,6 @@ def products_elt_dag():
     staging_quality = check_staging_quality()
     core_quality = check_core_quality()
 
- #
     staging >> staging_quality >> outputs
     verified >> core >> core_quality
 

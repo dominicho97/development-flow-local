@@ -6,7 +6,7 @@ from dags.datawarehouse.data_utils import get_db_connection
 def test_dag_integrity(dagbag):
     """Require exactly our declared DAGs, with their expected task counts."""
     # Maintain this contract when intentionally adding a DAG or changing tasks.
-    expected_tasks_per_dag = {"products_elt": 7}
+    expected_tasks_per_dag = {"products_elt": 7, "products_pipeline": 1}
 
     # A failed import must fail the test, rather than silently omit a DAG.
     assert not dagbag.import_errors, dagbag.import_errors
@@ -22,6 +22,24 @@ def test_dag_integrity(dagbag):
             f"{dag_id}: expected {expected_count} tasks, "
             f"found {len(dag.tasks)}: {dag.task_ids}"
         )
+
+
+def test_pipeline_triggers_and_waits_for_elt(dagbag):
+    """The parent must target ELT and propagate its success/failure."""
+    from airflow.providers.standard.operators.trigger_dagrun import (
+        TriggerDagRunOperator,
+    )
+
+    trigger = dagbag.dags["products_pipeline"].get_task("trigger_products_elt")
+    assert isinstance(trigger, TriggerDagRunOperator)
+    assert trigger.trigger_dag_id == "products_elt"
+    assert trigger.trigger_run_id == "{{ run_id }}"
+    assert trigger.wait_for_completion is True
+    assert trigger.allowed_states == ["success"]
+    assert trigger.failed_states == ["failed"]
+    assert trigger.reset_dag_run is False
+    assert trigger.deferrable is False
+    assert dagbag.dags["products_elt"].max_active_runs == 1
 
 
 def test_products_dag_loads_with_quality_gates(dagbag):
