@@ -46,6 +46,14 @@ Each GitHub-hosted job has a fresh Docker host and database volume. Do not run
 this CI setup against your local stack: the base file still uses fixed container
 names/ports. Volume deletion is restricted to the disposable runner's stack.
 
+Before starting the stack, CI runs a one-off root container to assign
+`dataset/processed` and its existing files to the configured Airflow UID and
+group 0, with owner read/write permissions. This is limited to generated
+outputs; it does not change ownership of the raw dataset. The worker and tasks
+continue to run as the normal Airflow user. A preflight in the running worker
+creates a temporary file and opens existing CSVs for append without writing
+content, verifying both directory and existing-file access before E2E.
+
 `scripts/ci/wait_for_dags.py` waits for the DAGs to register and unpauses both
 before E2E. The job always attempts to collect diagnostics and remove its
 containers/volumes, including after test failure.
@@ -123,6 +131,21 @@ jobs in GitHub repository settings; workflow code alone does not enforce merges.
 
 ## Verification status
 
+### E2E processed-output permissions fix
+
+The task log identified the parent run's underlying failure: `transform`
+raised `PermissionError` while opening
+`/opt/airflow/dataset/processed/products_clean.csv`. Git checkout created the
+tracked CSV as a runner-owned file with ordinary 0644 permissions, while the
+Airflow task ran as UID 50000. Making only the directory writable did not
+change permissions on the existing file. The staging load succeeded; the
+parent correctly propagated its child's failure.
+
+CI now repairs ownership of the generated output directory and existing files
+before startup, then checks real worker write access before triggering a DAG.
+This also covers `products_duplicates.csv`. The fix still needs a live CI run
+to confirm end-to-end success; tests and quality thresholds were not relaxed.
+
 ### E2E parent failure diagnostics
 
 The next CI run passed DAG validation and database connectivity, then failed
@@ -142,8 +165,8 @@ For the reported run, inspect the exception under
 `dag_id=products_pipeline/run_id=e2e__28e8190f4c5740d79923b96d2c6a81df/task_id=trigger_products_elt/`.
 If it reports that `products_elt` failed, inspect that child run's failed task
 instead. These diagnostics preserve strict success requirements; the quality
-gates and expected task states are unchanged. A root-cause fix and passing live
-run remain pending the task exception.
+gates and expected task states are unchanged. The subsequent task exception
+identified the output-permissions problem documented above.
 
 The first CI DagBag step exposed an Airflow 3.4 API mismatch in the fixture:
 `include_examples` is no longer a constructor argument, and the

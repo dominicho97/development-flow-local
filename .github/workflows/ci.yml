@@ -102,8 +102,31 @@ jobs:
           docker build --target production --tag "$RUNTIME_IMAGE" .
           docker build --target test --build-arg TEST_RUNTIME_IMAGE="$RUNTIME_IMAGE" --tag "$CI_TEST_IMAGE" .
 
+      - name: Prepare Airflow output ownership
+        # Git-tracked CSVs are owned by the runner, but tasks run as UID 50000.
+        # A writable directory alone does not allow overwriting existing files.
+        # Limit this root operation to generated outputs on the disposable runner.
+        run: |
+          docker compose run --rm --no-deps --user 0:0 --entrypoint bash airflow-worker -c \
+            'chown -R "${AIRFLOW_UID}:0" /opt/airflow/dataset/processed && chmod -R u+rwX /opt/airflow/dataset/processed'
+
       - name: Start disposable Airflow stack
         run: docker compose up --no-build --wait --wait-timeout 300
+
+      - name: Verify worker can create and overwrite processed outputs
+        run: |
+          docker compose exec -T airflow-worker python - <<'PY'
+          from pathlib import Path
+          from tempfile import NamedTemporaryFile
+
+          folder = Path("/opt/airflow/dataset/processed")
+          with NamedTemporaryFile(dir=folder):
+              pass
+          for output in folder.glob("*.csv"):
+              with output.open("a", encoding="utf-8"):
+                  pass
+          print("Worker can create files and overwrite existing processed CSVs")
+          PY
 
       - name: Wait for and unpause DAGs
         run: uv run python scripts/ci/wait_for_dags.py
