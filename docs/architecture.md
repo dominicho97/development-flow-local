@@ -33,6 +33,15 @@ The stages are separate calls. `clean_products()` does not automatically call
 
 ## Modules
 
+### `dags/products_pipeline_dag.py`
+
+The `products_pipeline` DAG is the manual orchestration entry point. Its single
+`trigger_products_elt` task uses the standard provider's `TriggerDagRunOperator`
+to launch `products_elt` with the parent's run ID and wait for success or failure.
+It does not duplicate the ETL tasks. Both DAGs allow one active run at a time.
+Waiting occupies a worker slot because the triggerer is disabled; the local
+executor/pool must have capacity for the child tasks too.
+
 ### `src/ingestion.py`
 
 - Defines the required ingestion columns: `record_id`, `sku`,

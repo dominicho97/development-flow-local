@@ -137,17 +137,23 @@ if you intentionally want to delete the database volume.
 
 The [test guide](docs/development.md#using-conftestpy-and-unit_testpy) explains
 shared fixtures, the mocked connection test, and optional DagBag validation.
-The DAG integrity test requires no import errors, exactly the `products_elt`
-DAG, and seven tasks. It skips locally when Airflow is unavailable.
+The DAG integrity test requires no import errors, exactly `products_elt`
+(seven tasks) and `products_pipeline` (one trigger task). It skips locally when
+Airflow is unavailable.
 The PostgreSQL connection integration test is opt-in with `--run-integration`
 and closes its cursor and connection after use. It requires an Airflow-capable
 environment and a reachable warehouse database; ordinary local and CI runs
 skip it.
 
 An opt-in [end-to-end test](docs/development.md#end-to-end-airflow-test) can
-trigger `products_elt` on the live Docker Compose stack and verify all seven
+trigger `products_pipeline` on the live Docker Compose stack and verify its
+trigger task plus all seven `products_elt`
 tasks, both Soda scans, and processed output files. Run it from the host with
 `uv run pytest tests/test_airflow_e2e.py --run-e2e -v -s`.
+
+For normal UI runs, unpause both DAGs and trigger `products_pipeline`. It uses
+`TriggerDagRunOperator` to launch `products_elt`, waits for it, and fails if
+the ETL or quality gates fail. See [orchestration setup](docs/development.md#triggerdagrunoperator-orchestration).
 
 ## Project status
 
