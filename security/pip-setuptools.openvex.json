@@ -1,0 +1,16 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://github.com/dominicho97/development-flow-local/security/vex/pip-setuptools-2025-47273",
+  "author": "development-flow-local",
+  "timestamp": "2026-11-17T00:00:00Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {"name": "CVE-2025-47273"},
+      "products": [{"@id": "pkg:pypi/setuptools@70.3.0"}],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "impact_statement": "This exact version is reported by pip's bundled pkg_resources inventory. Pip does not vendor setuptools.package_index, where PackageIndex.download is vulnerable. CI verifies absence of that module and rejects vulnerable full setuptools distributions in the runtime Python installation roots before applying this statement. Installed setuptools is patched. See https://github.com/pypa/pip/issues/14031 and https://github.com/pypa/setuptools/security/advisories/GHSA-5rjg-fvgr-3xxf."
+    }
+  ]
+}

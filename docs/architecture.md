@@ -89,8 +89,9 @@ downstream processing; core quality validates the committed core table.
 `products_elt_data_quality(layer)` validates the layer and configuration paths,
 then invokes `/home/airflow/soda-venv/bin/soda` with `subprocess.run(check=True)`.
 Scan output reaches the Airflow task log, and nonzero exits fail the task.
-Soda 3.3.14 uses a separate environment to avoid conflicting with Airflow
-3.4.0's OpenTelemetry dependencies. No database scans execute during DAG import.
+Soda 3.5.6 uses a separate environment to isolate its dependencies from Airflow
+3.4.0 and its providers. The previous 3.3.14 pin was upgraded to permit patched
+protobuf. No database scans execute during DAG import.
 
 The shared `include/soda/configuration.yml` maps `postgres_staging` and
 `postgres_core` to their database schemas using Compose environment variables.
@@ -149,8 +150,14 @@ Only SKU, name, category, price, and stock are stored as product fields.
 
 ### `.github/workflows/ci.yml`
 
-The CI workflow runs on pull requests targeting `main`. It installs Python 3.12
-and locked uv dependencies, then runs pytest and Ruff.
+The workflow validates PRs to `main`, main pushes, version tags, and manual
+dispatches. A fast job runs local pytest, Ruff, and actionlint. A second job
+builds runtime/test images and validates real DagBag imports, PostgreSQL
+connectivity, and the orchestration E2E flow on a disposable Compose stack.
+It also generates an SBOM and gates fixable HIGH/CRITICAL image vulnerabilities.
+On version-tag pushes, a separate job publishes the already validated runtime
+image to GHCR and attests its provenance. Deployment remains outside the
+workflow. See [CI and releases](ci-cd.md).
 
 ## Current boundaries
 
