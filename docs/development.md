@@ -56,7 +56,7 @@ The DAG's warehouse tasks use this direct-path option.
 Run the full test suite:
 
 ```powershell
-uv run python -m pytest -v
+uv run python -m pytest tests -v
 ```
 
 Run Ruff linting and formatting checks:
@@ -66,8 +66,161 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-The current suite covers ingestion and transformation behavior, including
-invalid values and duplicate-SKU selection.
+The suite covers ingestion, transformation, warehouse writes, and Soda scan
+routing and failure propagation. These are unit tests with mocked external
+services; live database quality is checked by the Soda tasks in Airflow.
+PostgreSQL integration tests are skipped by default and require the explicit
+`--run-integration` option. Pytest's `testpaths` limits default discovery to
+`tests`, avoiding generated Airflow log directories.
+
+### Using conftest.py and unit_test.py
+
+Keep the existing `test_ingestion.py`, `test_transformation.py`, `test_dwh.py`,
+and `test_soda.py`. Pytest discovers both `test_*.py` and `*_test.py`, so
+`tests/unit_test.py` is collected alongside them without extra configuration.
+New tests belong in the file for the relevant module; no duplicate suite is
+needed.
+
+`tests/conftest.py` defines shared pytest fixtures. Pytest loads it automatically:
+tests request a fixture by including its name as a function parameter, without
+importing `conftest`. The `mock_postgres_hook` fixture temporarily replaces
+Airflow's Postgres hook during a test, then `monkeypatch` restores the previous
+module state. It requires neither Airflow locally nor a PostgreSQL server.
+
+`tests/unit_test.py` requests that fixture and calls the real
+`get_db_connection()` helper. It verifies that the helper uses connection ID
+`postgres_db_yt_elt`, calls the hook's `get_conn()` method, and returns that
+connection. It does not validate actual credentials or database connectivity.
+Compose supplies the real connection with `AIRFLOW_CONN_POSTGRES_DB_YT_ELT`;
+`POSTGRES_CONN_URI` is not used by this helper.
+
+Run commands from the repository root:
+
+```powershell
+# Run only the new test file.
+uv run python -m pytest tests/unit_test.py -v
+
+# Run one test explicitly.
+uv run python -m pytest tests/unit_test.py::test_postgres_connection_uses_warehouse_hook -v
+
+# Show available fixtures and inspect test discovery.
+uv run python -m pytest --fixtures tests/unit_test.py
+uv run python -m pytest tests --collect-only -q
+
+# Run the local suite (live database tests skip by default).
+uv run python -m pytest tests -q
+```
+
+Use `tests` explicitly to avoid collecting generated Airflow log directories.
+The `dagbag` fixture in `conftest.py` loads repository DAGs with examples
+disabled and adds the repository and DAG directories to the test import path.
+It imports the correctly capitalized `DagBag` class inside the fixture, so
+collecting ordinary unit tests does not require Airflow.
+
+`test_dag_integrity` verifies all of the following:
+
+- No DAG files have import errors; error details appear in assertion output.
+- Exactly one DAG is loaded, with the exact ID `products_elt`. Missing and
+  unexpected DAGs fail the test.
+- `products_elt` contains exactly seven tasks, including both quality gates.
+
+The explicit contract is `expected_tasks_per_dag = {"products_elt": 7}` in
+`tests/unit_test.py`. Update this mapping when intentionally adding a DAG or
+changing its task count. Each DAG is checked against its own expected count.
+The separate quality-gate test below verifies dependency relationships;
+counting tasks alone does not validate execution order.
+
+`test_products_dag_loads_with_quality_gates` verifies there are no DAG import
+errors and that both quality gates have the expected task dependencies. It
+loads DAG definitions without executing tasks or scanning PostgreSQL.
+Both DAG tests are skipped when Airflow is not installed; run them with pytest in an
+environment containing the project's Airflow version and providers to exercise
+the real DAG loader:
+
+```powershell
+uv run python -m pytest tests/unit_test.py::test_dag_integrity -v
+uv run python -m pytest tests/unit_test.py::test_products_dag_loads_with_quality_gates -v
+```
+
+The latest targeted verification collected three tests in `unit_test.py`:
+the mocked connection test passed, and both DagBag tests skipped because
+Airflow is absent locally. Lint and formatting checks passed. Actual DagBag
+integrity assertions still need execution in an Airflow-capable environment.
+
+For real PostgreSQL quality checks, trigger `products_elt` and inspect
+`check_staging_quality` and `check_core_quality`, as described in the
+[data quality guide](data-quality.md).
+
+### PostgreSQL integration test
+
+`tests/integration_test.py` adds a connection smoke test. It opens a cursor,
+executes `SELECT 1`, and expects `(1,)`. This checks connectivity and query
+execution; it does not check whether the database is empty, validate product
+rows, or run Soda. A context manager closes the cursor, and the
+`real_postgres_connection` fixture yields the connection and closes it in
+`finally`, including when the test fails. Connection or query errors propagate
+as pytest failures.
+
+The new fixture in `tests/conftest.py` calls the real warehouse
+`get_db_connection()` helper. It needs Airflow and the PostgreSQL provider,
+the configured `postgres_db_yt_elt` connection, and network access to the ELT
+database. Unlike `mock_postgres_hook`, it does not mock external services.
+
+The module has a registered `integration` marker. Collection skips these tests
+unless `--run-integration` is supplied; the fixture independently checks the
+same option before opening a connection. Default local and CI runs therefore
+need no database. Even directly selecting the file without the option skips
+the live test.
+
+In an environment containing the project's Airflow version and PostgreSQL
+provider, with its warehouse connection configured and database reachable, run:
+
+```powershell
+uv run python -m pytest tests/integration_test.py --run-integration -v
+# Alternatively, select all tests marked integration.
+uv run python -m pytest tests -m integration --run-integration -v
+```
+
+These invocations have not yet been verified against a live database. The
+plain local uv environment does not install Airflow; the option enables tests
+but does not install their runtime or configure credentials. When explicitly
+enabled, missing dependencies or an unreachable database fail the test.
+
+An earlier default-suite verification reported **74 passed, 2 skipped** before
+the E2E and additional DAG integrity tests were added. Use the current pytest
+summary for up-to-date counts; live database, E2E, and Airflow-dependent DAG
+tests have separate opt-in or dependency requirements as described here.
+
+### End-to-end Airflow test
+
+`tests/test_airflow_e2e.py` runs from the host and uses the Docker Compose CLI
+to trigger `products_elt` through Airflow. It exercises the running scheduler,
+executor, worker, CSV transformations, PostgreSQL loads, and both Soda scans.
+The host needs Docker and uv, but does not need a local Airflow installation.
+
+Start the Compose stack with the latest built image, wait for healthy services,
+and unpause `products_elt` in the UI. Run this on the local development stack:
+it performs real warehouse upserts and rewrites processed CSV outputs. Do not
+run another pipeline run concurrently against the shared input/output files.
+
+```powershell
+docker compose up -d
+docker compose ps
+uv run python -m pytest tests/test_airflow_e2e.py --run-e2e -v -s
+```
+
+The test prints a unique `e2e__...` run ID, polls for up to ten minutes, requires
+all seven tasks to succeed, and verifies both processed CSV files exist. A
+failed quality gate fails the test with task states. This is a success-path
+test: known bad core data is not accepted as a passing result. The run and its
+logs remain in Airflow for inspection; a timeout does not cancel the run.
+
+E2E tests skip unless `--run-e2e` is supplied. This flag is independent from
+`--run-integration`: the latter enables the direct database connection test,
+which requires an Airflow-capable Python environment. Default CI runs enable
+neither. No live E2E run has yet been verified from this development session.
+
+The test uses Airflow's documented [CLI trigger and task-state commands](https://airflow.apache.org/docs/apache-airflow/stable/cli-ref.html).
 
 ## Git workflow
 

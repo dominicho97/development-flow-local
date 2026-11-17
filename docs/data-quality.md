@@ -101,6 +101,14 @@ and [validity metrics](https://docs.soda.io/soda-documentation/soda-v3/sodacl-re
 
 ## Latest observed scan and investigation
 
+On 2026-11-17 the E2E run reached core quality and reported 10/11 checks
+passing: price validity passed, but one blank product name remained. The
+current code now filters missing/blank names after deduplication, logs skipped
+products, and rejects blank names at the core writer boundary. Each core load
+also removes existing null or whitespace-only names in the upsert transaction;
+raw staging rows are preserved. Rerun the full DAG to apply the repair, then
+verify the core scan. Rerunning only the scan does not change stored data.
+
 The initial four checks passed. After expanding to 11 checks, the local scan
 on 2026-11-16 reported **9 passed, 2 failed, 0 warnings, and 0 errors**:
 

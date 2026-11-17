@@ -76,6 +76,13 @@ def populate_table(data, schema):
     if schema == "core" and data[key].duplicated().any():
         raise ValueError(f"Warehouse key {key} must be unique within a batch.")
 
+    if schema == "core":
+        empty_names = data["product_name"].isna() | (
+            data["product_name"].astype(str).str.strip().eq("")
+        )
+        if empty_names.any():
+            raise ValueError("Core product names must not be empty.")
+
     # PostgreSQL needs None for SQL NULL, rather than pandas NaN or NA.
     products = data.astype(object).where(pd.notna(data), None)
     if schema == "staging":
@@ -94,6 +101,13 @@ def populate_table(data, schema):
         with conn:
             with conn.cursor() as cursor:
                 create_table(cursor, schema)
+                if schema == "core":
+                    # Repair old invalid core rows in the same transaction as upserts.
+                    # Preserve their original raw observations in staging.
+                    cursor.execute(
+                        "DELETE FROM core.products "
+                        "WHERE product_name IS NULL OR product_name ~ '^\\s*$'"
+                    )
                 for _, row in products.iterrows():
                     insert_rows(cursor, schema, row)
 

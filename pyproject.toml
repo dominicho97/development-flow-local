@@ -21,3 +21,8 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "e2e: triggers a live Airflow DAG run through Docker Compose",
+    "integration: requires Airflow, the PostgreSQL provider, and a live warehouse database",
+]

@@ -7,6 +7,63 @@ from dags.datawarehouse import data_modification, dwh
 from dags.datawarehouse.data_transformation import transform_data
 
 
+def test_core_excludes_latest_blank_names(caplog):
+    data = pd.DataFrame(
+        {
+            "sku": ["A", "A", "B", "C", "D"],
+            "last_seen": ["2026-01-01", "2026-02-01", "", "", ""],
+            "product_name": ["Old", "  ", None, "", " Valid "],
+        }
+    )
+    result = transform_data(data)
+    assert result["sku"].tolist() == ["D"]
+    assert result["product_name"].tolist() == ["Valid"]
+    assert "Skipping 3 products without a name" in caplog.text
+    assert len(data) == 5
+
+
+def test_core_cleans_old_blank_names_before_upsert(monkeypatch):
+    conn = MagicMock()
+    monkeypatch.setattr(data_modification, "get_db_connection", lambda: conn)
+    data = pd.DataFrame(
+        [
+            {
+                "sku": "A",
+                "product_name": "Rice",
+                "category": None,
+                "listed_price": None,
+                "stock_qty": None,
+            }
+        ]
+    )
+    data_modification.populate_table(data, "core")
+    cursor = conn.cursor.return_value.__enter__.return_value
+    queries = [call.args[0] for call in cursor.execute.call_args_list]
+    assert "DELETE FROM core.products" in queries[-2]
+    assert "product_name ~" in queries[-2]
+    assert "INSERT INTO core.products" in queries[-1]
+
+
+@pytest.mark.parametrize("name", [None, "", "  "])
+def test_core_writer_rejects_missing_name(monkeypatch, name):
+    connect = MagicMock()
+    monkeypatch.setattr(data_modification, "get_db_connection", connect)
+    data = pd.DataFrame(
+        [
+            {
+                "sku": "A",
+                "product_name": name,
+                "category": None,
+                "listed_price": None,
+                "stock_qty": None,
+            }
+        ]
+    )
+    with pytest.raises(ValueError, match="names must not be empty"):
+        data_modification.populate_table(data, "core")
+    connect.assert_not_called()
+
+
 def test_core_transformation_excludes_missing_skus(caplog):
     data = pd.DataFrame(
         {
