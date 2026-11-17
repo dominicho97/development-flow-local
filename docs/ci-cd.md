@@ -123,6 +123,28 @@ jobs in GitHub repository settings; workflow code alone does not enforce merges.
 
 ## Verification status
 
+### E2E parent failure diagnostics
+
+The next CI run passed DAG validation and database connectivity, then failed
+in `products_pipeline.trigger_products_elt`. The reported parent state alone
+does not identify the cause: the trigger can fail itself or propagate a failed
+child run. The underlying task exception is still needed before attributing
+this failure to a specific component.
+
+The E2E failure output now includes task states for both DAGs and the last 60
+lines of each available task log for that run. It also saves
+`.ci/reports/e2e-failure.txt`. CI copies the full worker task-log directory into
+the validation report artifact before cleanup; `compose.log` alone may not
+contain task exceptions. Missing child runs or diagnostic timeouts no longer
+prevent reporting the original E2E failure.
+
+For the reported run, inspect the exception under
+`dag_id=products_pipeline/run_id=e2e__28e8190f4c5740d79923b96d2c6a81df/task_id=trigger_products_elt/`.
+If it reports that `products_elt` failed, inspect that child run's failed task
+instead. These diagnostics preserve strict success requirements; the quality
+gates and expected task states are unchanged. A root-cause fix and passing live
+run remain pending the task exception.
+
 The first CI DagBag step exposed an Airflow 3.4 API mismatch in the fixture:
 `include_examples` is no longer a constructor argument, and the
 `airflow.models.dagbag` import is deprecated. The fixture now uses

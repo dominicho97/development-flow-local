@@ -22,7 +22,7 @@ EXPECTED_TASKS = {
 }
 
 
-def airflow(*arguments):
+def airflow(*arguments, check=True):
     result = subprocess.run(
         ["docker", "compose", "exec", "-T", "airflow-scheduler", "airflow", *arguments],
         cwd=PROJECT_ROOT,
@@ -31,8 +31,54 @@ def airflow(*arguments):
         timeout=45,
         check=False,
     )
+    if not check:
+        return f"exit_code={result.returncode}\n{result.stdout}{result.stderr}"
     assert result.returncode == 0, result.stdout + result.stderr
     return result.stdout
+
+
+def failure_details(run_id):
+    """Report both DAGs and task exceptions without hiding the original failure."""
+    sections = [f"Airflow E2E run: {run_id}"]
+    for dag_id in ("products_pipeline", "products_elt"):
+        try:
+            output = airflow(
+                "tasks",
+                "states-for-dag-run",
+                dag_id,
+                run_id,
+                "-o",
+                "json",
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as error:
+            output = f"Could not retrieve task states: {error}"
+        sections.append(f"{dag_id} task states:\n{output}")
+
+        # Airflow writes actual Python exceptions to task files, not necessarily
+        # to `docker compose logs`. Include bounded excerpts in pytest output.
+        log_folder = PROJECT_ROOT / "logs" / f"dag_id={dag_id}" / f"run_id={run_id}"
+        try:
+            log_files = sorted(log_folder.rglob("*.log"))
+            if not log_files:
+                sections.append(f"No task log files found at {log_folder}")
+            for path in log_files:
+                lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+                sections.append(
+                    f"{path.relative_to(PROJECT_ROOT)} (last 60 lines):\n"
+                    + "\n".join(lines[-60:])
+                )
+        except OSError as error:
+            sections.append(f"Could not read task logs: {error}")
+
+    details = "\n\n".join(sections)
+    try:
+        report_folder = PROJECT_ROOT / ".ci" / "reports"
+        report_folder.mkdir(parents=True, exist_ok=True)
+        (report_folder / "e2e-failure.txt").write_text(details, encoding="utf-8")
+    except OSError as error:
+        details += f"\nCould not save diagnostics: {error}"
+    return details
 
 
 def json_rows(output, required_key):
@@ -84,9 +130,8 @@ def test_products_elt_end_to_end():
                 ),
                 "task_id",
             )
-            assert "success" in states, (
-                f"Parent run {run_id} failed: {parent_rows}; inspect child products_elt"
-            )
+            if "success" not in states:
+                pytest.fail(failure_details(run_id))
             assert {row["task_id"]: row["state"] for row in parent_rows} == {
                 "trigger_products_elt": "success"
             }
@@ -99,14 +144,13 @@ def test_products_elt_end_to_end():
             task_states = {row["task_id"]: row["state"] for row in rows}
             assert "success" in states, f"Run {run_id} failed: {task_states}"
             assert set(task_states) == EXPECTED_TASKS, task_states
-            assert all(state == "success" for state in task_states.values()), (
-                task_states
-            )
+            if not all(state == "success" for state in task_states.values()):
+                pytest.fail(failure_details(run_id))
             break
         time.sleep(5)
     else:
         pytest.fail(
-            f"Run {run_id} did not finish within 600 seconds; inspect Airflow UI"
+            f"Run {run_id} did not finish within 600 seconds.\n{failure_details(run_id)}"
         )
 
     # The DAG's load task checks these too; verify the mounted host artifacts.

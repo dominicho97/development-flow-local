@@ -158,6 +158,8 @@ jobs:
           mkdir -p .ci/reports
           docker compose ps --all > .ci/reports/compose-status.txt 2>&1
           docker compose logs --no-color > .ci/reports/compose.log 2>&1
+          # Task exceptions are stored in files and may be absent from container stdout.
+          docker cp airflow-worker:/opt/airflow/logs .ci/reports/task-logs || true
           docker cp airflow-worker:/tmp/dag-tests.xml .ci/reports/dag-tests.xml || true
           docker cp airflow-worker:/tmp/integration-tests.xml .ci/reports/integration-tests.xml || true
 
