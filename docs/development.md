@@ -56,7 +56,7 @@ The DAG's warehouse tasks use this direct-path option.
 Run the full test suite:
 
 ```powershell
-uv run python -m pytest -v
+uv run python -m pytest tests -v
 ```
 
 Run Ruff linting and formatting checks:
@@ -66,8 +66,52 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-The current suite covers ingestion and transformation behavior, including
-invalid values and duplicate-SKU selection.
+The suite covers ingestion, transformation, warehouse writes, and Soda scan
+routing and failure propagation. These are unit tests with mocked external
+services; live database quality is checked by the Soda tasks in Airflow.
+
+### Using conftest.py and unit_test.py
+
+Keep the existing `test_ingestion.py`, `test_transformation.py`, `test_dwh.py`,
+and `test_soda.py`. Pytest discovers both `test_*.py` and `*_test.py`, so
+`tests/unit_test.py` is collected alongside them without extra configuration.
+New tests belong in the file for the relevant module; no duplicate suite is
+needed.
+
+`tests/conftest.py` defines shared pytest fixtures. Pytest loads it automatically:
+tests request a fixture by including its name as a function parameter, without
+importing `conftest`. The `mock_postgres_hook` fixture temporarily replaces
+Airflow's Postgres hook during a test, then `monkeypatch` restores the previous
+module state. It requires neither Airflow locally nor a PostgreSQL server.
+
+`tests/unit_test.py` requests that fixture and calls the real
+`get_db_connection()` helper. It verifies that the helper uses connection ID
+`postgres_db_yt_elt`, calls the hook's `get_conn()` method, and returns that
+connection. It does not validate actual credentials or database connectivity.
+Compose supplies the real connection with `AIRFLOW_CONN_POSTGRES_DB_YT_ELT`;
+`POSTGRES_CONN_URI` is not used by this helper.
+
+Run commands from the repository root:
+
+```powershell
+# Run only the new test file.
+uv run python -m pytest tests/unit_test.py -v
+
+# Run one test explicitly.
+uv run python -m pytest tests/unit_test.py::test_postgres_connection_uses_warehouse_hook -v
+
+# Show available fixtures and inspect test discovery.
+uv run python -m pytest --fixtures tests/unit_test.py
+uv run python -m pytest tests --collect-only -q
+
+# Run all tests, including the existing files.
+uv run python -m pytest tests -q
+```
+
+Use `tests` explicitly to avoid collecting generated Airflow log directories.
+For real PostgreSQL quality checks, trigger `products_elt` and inspect
+`check_staging_quality` and `check_core_quality`, as described in the
+[data quality guide](data-quality.md).
 
 ## Git workflow
 
