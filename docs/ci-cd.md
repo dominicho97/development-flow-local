@@ -177,8 +177,27 @@ PostgreSQL/init/API/scheduler/DAG-processor/worker log tails directly in the
 failed startup step. Cleanup reports unavailable XML files without emitting
 misleading Docker copy errors. Use the first service exception or healthcheck
 failure to diagnose startup. The startup issue reported after the slim-image
-change remains unconfirmed until those logs are available; no provider or
-healthcheck changes have been guessed from missing report files alone.
+change was subsequently traced to the Celery compatibility issue below.
+
+### Celery 5.7 worker startup incompatibility
+
+The worker traceback identified `ImportError: cannot import name 'retry' from
+'celery.backends.database'`. The resolved Celery 5.7.0 removed that helper,
+while the current Airflow Celery provider imports it. Its declared dependency
+range still permits Celery 5.7, so both resolution and `uv pip check` can pass
+despite this runtime incompatibility. The final optional-provider wrapper
+message about requiring Airflow >=2.8 is secondary and misleading here;
+Airflow 3.4.0 is already installed.
+
+The Linux-only Airflow group now requires `celery[redis]>=5.6.0,<5.7.0`, with
+the exact compatible version in `uv.lock`. Keep this bound until a provider
+release supports the changed backend API. The Dockerfile also imports the
+actual Celery executor during the build, so a recurrence fails before stack
+startup. This smoke check does not connect to Redis or PostgreSQL; CI still
+validates actual worker health and E2E execution afterward.
+
+References: [Celery 5.6 backend helper](https://raw.githubusercontent.com/celery/celery/v5.6.0/celery/backends/database/__init__.py)
+and [Celery 5.7 backend](https://raw.githubusercontent.com/celery/celery/v5.7.0/celery/backends/database/__init__.py).
 
 ### E2E processed-output permissions fix
 

@@ -63,6 +63,10 @@ RUN uv pip install \
         --requirement /tmp/project-requirements.txt \
     && rm /tmp/project-requirements.txt
 
+# Dependency metadata alone does not catch removed Celery backend symbols.
+# Exercise the same executor import used when the worker starts, without a broker.
+RUN python -c "from airflow.providers.celery.executors.celery_executor import app; from importlib.metadata import version; print('Celery executor import succeeded:', version('celery'))"
+
 # Keep Soda's locked dependencies isolated from Airflow and its providers.
 USER root
 RUN mkdir -p /tmp/.cache/uv && chown -R airflow:root /tmp/.cache/uv

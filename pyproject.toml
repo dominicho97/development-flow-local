@@ -18,6 +18,7 @@ exclude-newer = "7 days"
 airflow = [
     "apache-airflow-providers-standard>=1.21.0,<2.0.0 ; sys_platform == 'linux'",
     "apache-airflow[celery,fab,postgres]==3.4.0 ; sys_platform == 'linux'",
+    "celery[redis]>=5.6.0,<5.7.0 ; sys_platform == 'linux'",
     "dnspython>=2.9.2,<3.0.0 ; sys_platform == 'linux'",
     "msgpack>=1.2.3,<2.0.0 ; sys_platform == 'linux'",
     "urllib3>=2.8.0,<3.0.0 ; sys_platform == 'linux'",
