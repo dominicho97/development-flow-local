@@ -3,6 +3,27 @@
 from dags.datawarehouse.data_utils import get_db_connection
 
 
+def test_dag_integrity(dagbag):
+    """Require exactly our declared DAGs, with their expected task counts."""
+    # Maintain this contract when intentionally adding a DAG or changing tasks.
+    expected_tasks_per_dag = {"products_elt": 7}
+
+    # A failed import must fail the test, rather than silently omit a DAG.
+    assert not dagbag.import_errors, dagbag.import_errors
+
+    # Verify both the total count and exact IDs: no missing or unexpected DAGs.
+    assert len(dagbag.dags) == len(expected_tasks_per_dag), list(dagbag.dags)
+    assert set(dagbag.dags) == set(expected_tasks_per_dag)
+
+    # Validate every DAG against its own explicit expected task count.
+    for dag_id, expected_count in expected_tasks_per_dag.items():
+        dag = dagbag.dags[dag_id]
+        assert len(dag.tasks) == expected_count, (
+            f"{dag_id}: expected {expected_count} tasks, "
+            f"found {len(dag.tasks)}: {dag.task_ids}"
+        )
+
+
 def test_products_dag_loads_with_quality_gates(dagbag):
     # Detect parsing/import failures, such as invalid Python or missing providers.
     # Include the error dictionary in pytest's failure output for diagnosis.

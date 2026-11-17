@@ -114,16 +114,38 @@ uv run python -m pytest tests -q
 Use `tests` explicitly to avoid collecting generated Airflow log directories.
 The `dagbag` fixture in `conftest.py` loads repository DAGs with examples
 disabled and adds the repository and DAG directories to the test import path.
+It imports the correctly capitalized `DagBag` class inside the fixture, so
+collecting ordinary unit tests does not require Airflow.
+
+`test_dag_integrity` verifies all of the following:
+
+- No DAG files have import errors; error details appear in assertion output.
+- Exactly one DAG is loaded, with the exact ID `products_elt`. Missing and
+  unexpected DAGs fail the test.
+- `products_elt` contains exactly seven tasks, including both quality gates.
+
+The explicit contract is `expected_tasks_per_dag = {"products_elt": 7}` in
+`tests/unit_test.py`. Update this mapping when intentionally adding a DAG or
+changing its task count. Each DAG is checked against its own expected count.
+The separate quality-gate test below verifies dependency relationships;
+counting tasks alone does not validate execution order.
+
 `test_products_dag_loads_with_quality_gates` verifies there are no DAG import
 errors and that both quality gates have the expected task dependencies. It
 loads DAG definitions without executing tasks or scanning PostgreSQL.
-This test is skipped when Airflow is not installed; run it with pytest in an
+Both DAG tests are skipped when Airflow is not installed; run them with pytest in an
 environment containing the project's Airflow version and providers to exercise
 the real DAG loader:
 
 ```powershell
+uv run python -m pytest tests/unit_test.py::test_dag_integrity -v
 uv run python -m pytest tests/unit_test.py::test_products_dag_loads_with_quality_gates -v
 ```
+
+The latest targeted verification collected three tests in `unit_test.py`:
+the mocked connection test passed, and both DagBag tests skipped because
+Airflow is absent locally. Lint and formatting checks passed. Actual DagBag
+integrity assertions still need execution in an Airflow-capable environment.
 
 For real PostgreSQL quality checks, trigger `products_elt` and inspect
 `check_staging_quality` and `check_core_quality`, as described in the
@@ -164,9 +186,10 @@ plain local uv environment does not install Airflow; the option enables tests
 but does not install their runtime or configure credentials. When explicitly
 enabled, missing dependencies or an unreachable database fail the test.
 
-Default-suite verification after this change: **74 passed, 2 skipped**. The
-skips are the live PostgreSQL test and the DagBag test (Airflow is absent
-locally).
+An earlier default-suite verification reported **74 passed, 2 skipped** before
+the E2E and additional DAG integrity tests were added. Use the current pytest
+summary for up-to-date counts; live database, E2E, and Airflow-dependent DAG
+tests have separate opt-in or dependency requirements as described here.
 
 ### End-to-end Airflow test
 

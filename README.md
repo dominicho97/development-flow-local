@@ -137,6 +137,8 @@ if you intentionally want to delete the database volume.
 
 The [test guide](docs/development.md#using-conftestpy-and-unit_testpy) explains
 shared fixtures, the mocked connection test, and optional DagBag validation.
+The DAG integrity test requires no import errors, exactly the `products_elt`
+DAG, and seven tasks. It skips locally when Airflow is unavailable.
 The PostgreSQL connection integration test is opt-in with `--run-integration`
 and closes its cursor and connection after use. It requires an Airflow-capable
 environment and a reachable warehouse database; ordinary local and CI runs
