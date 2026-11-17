@@ -87,6 +87,23 @@ configured. Fixable HIGH/CRITICAL findings in the current image may require
 dependency upgrades before the first green release. The scan covers the
 application runtime image, not every third-party Compose service image.
 
+The first vulnerability gate reported CVE-2026-98466 against the inherited
+`linux-libc-dev` package at `6.12.115-2+dhi0`. Debian lists `6.12.117-1` as the
+fixed trixie security version. The Dockerfile now refreshes APT metadata,
+upgrades that installed package, and requires its version to be at least
+`6.12.117-1` using `dpkg --compare-versions`. It removes APT indexes afterward.
+If the base image's configured repositories cannot supply the fixed version,
+the build fails instead of suppressing the advisory. CI also pulls fresh base
+images for the production build; its test extension still uses that exact
+locally built runtime image.
+
+This addresses the reported package finding, not necessarily all entries in
+`vulnerabilities.json`. Rebuild and scan in CI to verify the installed version
+and identify remaining packages. For a local rebuild after new repository
+security updates, use `docker build --pull --no-cache -t dominicho97/products_elt:1.0.2 .`
+so an older cached APT layer is not reused. This package update does not patch
+the Docker host's kernel. See the [Debian advisory](https://security-tracker.debian.org/tracker/CVE-2026-98466).
+
 ## Publishing a release
 
 The default destination is `ghcr.io/<github-owner>/<repository>`. This is

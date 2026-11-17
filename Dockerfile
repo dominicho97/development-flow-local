@@ -23,6 +23,14 @@ COPY pyproject.toml uv.lock ./
 
 USER root
 
+# Refresh the inherited development headers for CVE-2026-98466. Fail the build
+# if the configured Debian repositories cannot supply the fixed version.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends --only-upgrade linux-libc-dev \
+    && dpkg --compare-versions \
+        "$(dpkg-query -W -f='${Version}' linux-libc-dev)" ge '6.12.117-1' \
+    && rm -rf /var/lib/apt/lists/*
+
 # Export only runtime dependencies from the committed lockfile.
 RUN uv export \
         --frozen \
