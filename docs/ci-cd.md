@@ -72,6 +72,11 @@ in; development still uses the existing bind mounts.
 
 ## Reports and security policy
 
+See the [2026-11-17 artifact review](vulnerability-review-2026-11-17.md) for the
+full remaining package findings, successful application test results, inventory
+discrepancies, and the Soda/protobuf compatibility blocker. CI now also records
+`runtime-inventory.json` to compare installed versions with scanner metadata.
+
 The Actions run uploads a unit-test JUnit report and a separate validation
 artifact containing available DagBag/integration/E2E JUnit reports, Compose
 status/logs, a CycloneDX SBOM, and vulnerability JSON. Reports are retained for
@@ -96,6 +101,20 @@ If the base image's configured repositories cannot supply the fixed version,
 the build fails instead of suppressing the advisory. CI also pulls fresh base
 images for the production build; its test extension still uses that exact
 locally built runtime image.
+
+The current runtime uses Airflow's slim 3.4.0 Python 3.12 image, with the
+Linux-only `airflow` dependency group exported from `uv.lock`. That group
+provides the required Celery/FAB/PostgreSQL/standard providers and security
+minimums without pulling unused Ray/AI integrations. Local `uv sync` still
+installs the main project and dev group, not Airflow. To update image-only
+dependencies, use `uv add --group airflow --no-sync <requirement>` and keep
+Linux markers on those requirements. Keep `AIRFLOW_VERSION` in the Dockerfile
+and the exact Airflow dependency in `pyproject.toml` aligned.
+
+Soda is now 3.5.6 with protobuf 6.33.6, and the OS update includes both zlib
+packages as well as linux-libc-dev. `uv pip check` validates both installed
+Python environments at build time. See the artifact review for remaining
+verification and inherited-metadata questions.
 
 This addresses the reported package finding, not necessarily all entries in
 `vulnerabilities.json`. Rebuild and scan in CI to verify the installed version

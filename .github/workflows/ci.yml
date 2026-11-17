@@ -153,6 +153,36 @@ jobs:
             -v "$PWD/.ci/reports:/reports" "$TRIVY_IMAGE" image \
             --format cyclonedx --output /reports/sbom.cdx.json "$RUNTIME_IMAGE"
 
+      - name: Record actual runtime package versions
+        run: |
+          docker run --rm -i --entrypoint python "$RUNTIME_IMAGE" - > .ci/reports/runtime-inventory.json <<'PY'
+          import importlib.metadata
+          import json
+          import os
+          import subprocess
+
+          packages = ["aiohttp", "dnspython", "litellm", "msgpack", "protobuf",
+                      "ray", "setuptools", "soupsieve", "urllib3"]
+          installed = {}
+          for name in packages:
+              try:
+                  installed[name] = importlib.metadata.version(name)
+              except importlib.metadata.PackageNotFoundError:
+                  installed[name] = None
+          operating_system = subprocess.run(
+              ["dpkg-query", "-W", "linux-libc-dev", "zlib1g", "zlib1g-dev"],
+              capture_output=True, text=True, check=True,
+          )
+          soda = subprocess.run(
+              [os.environ["SODA_PYTHON"], "-c",
+               "import importlib.metadata as m,json; print(json.dumps({n:m.version(n) for n in ['soda-core-postgres','protobuf','setuptools','urllib3']}))"],
+              capture_output=True, text=True, check=True,
+          )
+          print(json.dumps({"os_packages": operating_system.stdout,
+                            "airflow_python": installed,
+                            "soda_python": json.loads(soda.stdout)}, indent=2))
+          PY
+
       - name: Gate fixable high and critical image vulnerabilities
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \

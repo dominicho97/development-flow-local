@@ -322,8 +322,8 @@ docker compose up -d
 docker compose ps
 ```
 
-Soda Core Postgres 3.3.14 runs in `/home/airflow/soda-venv` because its
-OpenTelemetry dependencies conflict with Airflow 3.4.0. Run scans from Airflow
+Soda Core Postgres 3.5.6 runs in `/home/airflow/soda-venv` to isolate its
+dependencies from Airflow 3.4.0 and its providers. Run scans from Airflow
 tasks using a subprocess with `/home/airflow/soda-venv/bin/soda`, or use the
 `SODA_PYTHON` environment variable for a Python scan script. Importing Soda
 directly into an Airflow task uses the wrong Python environment.
