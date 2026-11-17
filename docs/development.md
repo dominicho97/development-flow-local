@@ -168,6 +168,37 @@ Default-suite verification after this change: **74 passed, 2 skipped**. The
 skips are the live PostgreSQL test and the DagBag test (Airflow is absent
 locally).
 
+### End-to-end Airflow test
+
+`tests/test_airflow_e2e.py` runs from the host and uses the Docker Compose CLI
+to trigger `products_elt` through Airflow. It exercises the running scheduler,
+executor, worker, CSV transformations, PostgreSQL loads, and both Soda scans.
+The host needs Docker and uv, but does not need a local Airflow installation.
+
+Start the Compose stack with the latest built image, wait for healthy services,
+and unpause `products_elt` in the UI. Run this on the local development stack:
+it performs real warehouse upserts and rewrites processed CSV outputs. Do not
+run another pipeline run concurrently against the shared input/output files.
+
+```powershell
+docker compose up -d
+docker compose ps
+uv run python -m pytest tests/test_airflow_e2e.py --run-e2e -v -s
+```
+
+The test prints a unique `e2e__...` run ID, polls for up to ten minutes, requires
+all seven tasks to succeed, and verifies both processed CSV files exist. A
+failed quality gate fails the test with task states. This is a success-path
+test: known bad core data is not accepted as a passing result. The run and its
+logs remain in Airflow for inspection; a timeout does not cancel the run.
+
+E2E tests skip unless `--run-e2e` is supplied. This flag is independent from
+`--run-integration`: the latter enables the direct database connection test,
+which requires an Airflow-capable Python environment. Default CI runs enable
+neither. No live E2E run has yet been verified from this development session.
+
+The test uses Airflow's documented [CLI trigger and task-state commands](https://airflow.apache.org/docs/apache-airflow/stable/cli-ref.html).
+
 ## Git workflow
 
 Use a feature branch based on the latest `main` for a change:

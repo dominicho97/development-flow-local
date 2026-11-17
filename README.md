@@ -142,6 +142,11 @@ and closes its cursor and connection after use. It requires an Airflow-capable
 environment and a reachable warehouse database; ordinary local and CI runs
 skip it.
 
+An opt-in [end-to-end test](docs/development.md#end-to-end-airflow-test) can
+trigger `products_elt` on the live Docker Compose stack and verify all seven
+tasks, both Soda scans, and processed output files. Run it from the host with
+`uv run pytest tests/test_airflow_e2e.py --run-e2e -v -s`.
+
 ## Project status
 
 The implemented work covers ingestion, dataframe cleaning, duplicate-SKU

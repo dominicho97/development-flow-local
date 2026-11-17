@@ -10,6 +10,12 @@ import pytest
 
 def pytest_addoption(parser):
     parser.addoption(
+        "--run-e2e",
+        action="store_true",
+        default=False,
+        help="Trigger and validate a real products_elt run through Docker Compose.",
+    )
+    parser.addoption(
         "--run-integration",
         action="store_true",
         default=False,
@@ -18,12 +24,11 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--run-integration"):
-        return
-    skip = pytest.mark.skip(reason="Use --run-integration to test the live database")
     for item in items:
-        if "integration" in item.keywords:
-            item.add_marker(skip)
+        if "integration" in item.keywords and not config.getoption("--run-integration"):
+            item.add_marker(pytest.mark.skip(reason="Use --run-integration"))
+        if "e2e" in item.keywords and not config.getoption("--run-e2e"):
+            item.add_marker(pytest.mark.skip(reason="Use --run-e2e"))
 
 
 @pytest.fixture
