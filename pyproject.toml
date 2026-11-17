@@ -21,3 +21,7 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "integration: requires Airflow, the PostgreSQL provider, and a live warehouse database",
+]

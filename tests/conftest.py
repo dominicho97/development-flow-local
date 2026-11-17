@@ -8,6 +8,24 @@ from unittest.mock import MagicMock
 import pytest
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="Run integration tests requiring Airflow and a live PostgreSQL database.",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--run-integration"):
+        return
+    skip = pytest.mark.skip(reason="Use --run-integration to test the live database")
+    for item in items:
+        if "integration" in item.keywords:
+            item.add_marker(skip)
+
+
 @pytest.fixture
 def dagbag(monkeypatch):
     """Load repository DAGs when Airflow is available; otherwise skip the test."""
@@ -37,14 +55,18 @@ def mock_postgres_hook(monkeypatch):
     monkeypatch.setitem(sys.modules, module_name, module)
     return hook
 
-@pytest.fixture
-def test_real_postgres_connection():
-    """Return a real connection to the warehouse's PostgreSQL database.
 
-    This fixture is only for tests that need to verify the warehouse's
-    actual database state. It is not used by default, because it requires
-    a running PostgreSQL container and can be slow.
-    """
+@pytest.fixture
+def real_postgres_connection(request):
+    """Open a live warehouse connection and always close it after the test."""
+    # Guard the fixture too, so accidentally using it in an unmarked test
+    # cannot open a database connection during an ordinary local or CI run.
+    if not request.config.getoption("--run-integration"):
+        pytest.skip("Use --run-integration to test the live database")
     from dags.datawarehouse.data_utils import get_db_connection
 
-    return get_db_connection()
+    connection = get_db_connection()
+    try:
+        yield connection
+    finally:
+        connection.close()

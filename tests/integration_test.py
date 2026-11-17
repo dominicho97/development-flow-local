@@ -1,21 +1,14 @@
+"""Opt-in checks against the real warehouse database."""
+
 import pytest
-import psycopg2
+
+pytestmark = pytest.mark.integration
+
 
 def test_real_postgres_connection(real_postgres_connection):
-    cursor = None
-    """Verify that the warehouse's PostgreSQL database is reachable and empty.
-
-    This test is slow and requires a running PostgreSQL container, so it is
-    not part of the default suite. It is only run when explicitly requested.
-    """
-    try:
-        cursor = real_postgres_connection.cursor()
+    """Verify connectivity and SQL execution, without changing warehouse data."""
+    # The context manager closes the cursor even when execution/assertion fails.
+    # The fixture separately owns and closes the connection.
+    with real_postgres_connection.cursor() as cursor:
         cursor.execute("SELECT 1")
-        result = cursor.fetchone()
-        assert result == (1,)
-    except psycopg2.OperationalError as e:
-        pytest.fail(f"Failed to connect to the PostgreSQL database: {e}")
-
-    finally:
-        if cursor is not None:
-            cursor.close()
+        assert cursor.fetchone() == (1,)

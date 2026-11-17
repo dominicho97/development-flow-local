@@ -69,6 +69,9 @@ uv run ruff format --check .
 The suite covers ingestion, transformation, warehouse writes, and Soda scan
 routing and failure propagation. These are unit tests with mocked external
 services; live database quality is checked by the Soda tasks in Airflow.
+PostgreSQL integration tests are skipped by default and require the explicit
+`--run-integration` option. Pytest's `testpaths` limits default discovery to
+`tests`, avoiding generated Airflow log directories.
 
 ### Using conftest.py and unit_test.py
 
@@ -104,7 +107,7 @@ uv run python -m pytest tests/unit_test.py::test_postgres_connection_uses_wareho
 uv run python -m pytest --fixtures tests/unit_test.py
 uv run python -m pytest tests --collect-only -q
 
-# Run all tests, including the existing files.
+# Run the local suite (live database tests skip by default).
 uv run python -m pytest tests -q
 ```
 
@@ -125,6 +128,45 @@ uv run python -m pytest tests/unit_test.py::test_products_dag_loads_with_quality
 For real PostgreSQL quality checks, trigger `products_elt` and inspect
 `check_staging_quality` and `check_core_quality`, as described in the
 [data quality guide](data-quality.md).
+
+### PostgreSQL integration test
+
+`tests/integration_test.py` adds a connection smoke test. It opens a cursor,
+executes `SELECT 1`, and expects `(1,)`. This checks connectivity and query
+execution; it does not check whether the database is empty, validate product
+rows, or run Soda. A context manager closes the cursor, and the
+`real_postgres_connection` fixture yields the connection and closes it in
+`finally`, including when the test fails. Connection or query errors propagate
+as pytest failures.
+
+The new fixture in `tests/conftest.py` calls the real warehouse
+`get_db_connection()` helper. It needs Airflow and the PostgreSQL provider,
+the configured `postgres_db_yt_elt` connection, and network access to the ELT
+database. Unlike `mock_postgres_hook`, it does not mock external services.
+
+The module has a registered `integration` marker. Collection skips these tests
+unless `--run-integration` is supplied; the fixture independently checks the
+same option before opening a connection. Default local and CI runs therefore
+need no database. Even directly selecting the file without the option skips
+the live test.
+
+In an environment containing the project's Airflow version and PostgreSQL
+provider, with its warehouse connection configured and database reachable, run:
+
+```powershell
+uv run python -m pytest tests/integration_test.py --run-integration -v
+# Alternatively, select all tests marked integration.
+uv run python -m pytest tests -m integration --run-integration -v
+```
+
+These invocations have not yet been verified against a live database. The
+plain local uv environment does not install Airflow; the option enables tests
+but does not install their runtime or configure credentials. When explicitly
+enabled, missing dependencies or an unreachable database fail the test.
+
+Default-suite verification after this change: **74 passed, 2 skipped**. The
+skips are the live PostgreSQL test and the DagBag test (Airflow is absent
+locally).
 
 ## Git workflow
 

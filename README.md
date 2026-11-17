@@ -135,6 +135,13 @@ if you intentionally want to delete the database volume.
 - [Data quality](docs/data-quality.md) — Soda setup, scan commands, checks, and known failures
 - [Development](docs/development.md) — workflow, checks, and CI
 
+The [test guide](docs/development.md#using-conftestpy-and-unit_testpy) explains
+shared fixtures, the mocked connection test, and optional DagBag validation.
+The PostgreSQL connection integration test is opt-in with `--run-integration`
+and closes its cursor and connection after use. It requires an Airflow-capable
+environment and a reachable warehouse database; ordinary local and CI runs
+skip it.
+
 ## Project status
 
 The implemented work covers ingestion, dataframe cleaning, duplicate-SKU
