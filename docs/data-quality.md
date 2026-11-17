@@ -1,6 +1,6 @@
 # PostgreSQL data quality checks
 
-Soda Core Postgres is pinned to `3.3.14` in `pyproject.toml`, with resolved
+Soda Core Postgres is pinned to `3.5.6` in `pyproject.toml`, with resolved
 dependencies in `uv.lock`. The Docker image is `dominicho97/products_elt:1.0.2`.
 The `products_elt` DAG runs scans against both `staging.products` and
 `core.products`. Each scan is also available as a manual command.
@@ -33,7 +33,9 @@ Trigger a new `products_elt` run to execute the new tasks.
 
 ## Runtime and installation
 
-Airflow 3.4.0 and Soda 3.3.14 require incompatible OpenTelemetry versions.
+The earlier Soda 3.3.14 pin required incompatible OpenTelemetry versions and
+vulnerable protobuf 4.x. Soda 3.5.6 now allows the patched protobuf 6.33.6
+resolved in `uv.lock`; the project requires protobuf >=6.33.5,<7.
 The Dockerfile installs Soda in `/home/airflow/soda-venv` and keeps its
 dependencies separate from Airflow's Python environment. Airflow scan
 tasks invoke Soda through a subprocess using its full executable path.
@@ -42,8 +44,9 @@ tasks invoke Soda through a subprocess using its full executable path.
 The Dockerfile creates `/tmp/.cache/uv` as root and assigns ownership to
 `airflow:root` before creating the environment. The project also includes
 `setuptools`, which provides the `distutils.util` module imported by this
-Soda version on Python 3.12. Image build checks run `soda --version` and
-inspect the installed package.
+older Soda version on Python 3.12. Setuptools remains an explicit dependency.
+Image build checks run `soda --version`, inspect the installed package, and
+check dependency consistency in both Python environments.
 
 After dependency or Dockerfile changes, rebuild and recreate containers:
 

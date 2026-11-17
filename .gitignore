@@ -220,6 +220,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 logs/
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
 .env.ci
@@ -229,3 +230,7 @@ logs/
 .ssh/
 .ci/
 >>>>>>> Stashed changes
+=======
+.env.ci
+.ci/
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6

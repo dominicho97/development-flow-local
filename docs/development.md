@@ -112,9 +112,11 @@ uv run python -m pytest tests -q
 ```
 
 Use `tests` explicitly to avoid collecting generated Airflow log directories.
-The `dagbag` fixture in `conftest.py` loads repository DAGs with examples
-disabled and adds the repository and DAG directories to the test import path.
-It imports the correctly capitalized `DagBag` class inside the fixture, so
+The `dagbag` fixture in `conftest.py` scans the explicit repository `dags/`
+folder and adds the repository and DAG directories to the test import path.
+For Airflow 3.4 it imports `DagBag` from `airflow.dag_processing.dagbag` and
+calls `DagBag(dag_folder=...)`; the old `include_examples` argument has been
+removed. It imports the class inside the fixture, so
 collecting ordinary unit tests does not require Airflow.
 
 `test_dag_integrity` verifies all of the following:
@@ -169,8 +171,9 @@ database. Unlike `mock_postgres_hook`, it does not mock external services.
 
 The module has a registered `integration` marker. Collection skips these tests
 unless `--run-integration` is supplied; the fixture independently checks the
-same option before opening a connection. Default local and CI runs therefore
-need no database. Even directly selecting the file without the option skips
+same option before opening a connection. Default local pytest and the CI unit
+job need no database; the CI Airflow job explicitly enables this test against
+its disposable stack. Even directly selecting the file without the option skips
 the live test.
 
 In an environment containing the project's Airflow version and PostgreSQL
@@ -245,6 +248,7 @@ logs remain in Airflow for inspection; a timeout does not cancel the run.
 
 E2E tests skip unless `--run-e2e` is supplied. This flag is independent from
 `--run-integration`: the latter enables the direct database connection test,
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 which requires an Airflow-capable Python environment. Default CI runs enable
 neither. No live E2E run has yet been verified from this development session.
@@ -253,6 +257,11 @@ which requires an Airflow-capable Python environment. CI enables the database
 test inside the Airflow test image and E2E on the runner host. The expanded CI
 workflow has passed live execution; see [CI and releases](ci-cd.md).
 >>>>>>> Stashed changes
+=======
+which requires an Airflow-capable Python environment. CI enables the database
+test inside the Airflow test image and E2E on the runner host. The expanded CI
+workflow still needs its first live execution; see [CI and releases](ci-cd.md).
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
 
 The test uses Airflow's documented [CLI trigger and task-state commands](https://airflow.apache.org/docs/apache-airflow/stable/cli-ref.html).
 
@@ -282,17 +291,22 @@ when that is useful.
 
 ## GitHub Actions
 
-`.github/workflows/ci.yml` runs for pull requests targeting `main`. The job:
+`.github/workflows/ci.yml` runs for pull requests to `main`, pushes to `main`,
+version-tag pushes, and manual dispatches. Python 3.12 and uv 0.13.7 are used
+with locked dependencies.
 
-1. checks out the repository;
-2. installs uv 0.11.14 and Python 3.12;
-3. installs dependencies with `uv sync --locked --dev`;
-4. runs `uv run python -m pytest -v`;
-5. runs `uv run ruff check .`; and
-6. runs `uv run ruff format --check .`.
+1. Unit tests, Ruff lint/format checks, and workflow/shell validation run first.
+2. CI builds the production image and a test extension of that exact image.
+3. A disposable Compose stack runs real DagBag, PostgreSQL connection, and
+   orchestration E2E tests, including both Soda quality gates.
+4. Trivy generates an SBOM and blocks fixable HIGH/CRITICAL vulnerabilities.
+5. Successful version-tag pushes publish the validated runtime to GHCR with
+   version and commit tags plus a provenance attestation. No deployment runs.
 
-The workflow has read-only repository contents permission. Review the result
-from the pull request's Checks tab or the repository's Actions tab.
+Validation jobs have read-only repository permission; the separate publishing
+job receives registry/attestation permissions. Reports and diagnostic logs are
+uploaded, and CI containers/volumes are cleaned up. See [CI and releases](ci-cd.md)
+for configuration, release commands, prerequisites, and verification status.
 
 ## Docker and Airflow
 
@@ -323,8 +337,8 @@ docker compose up -d
 docker compose ps
 ```
 
-Soda Core Postgres 3.3.14 runs in `/home/airflow/soda-venv` because its
-OpenTelemetry dependencies conflict with Airflow 3.4.0. Run scans from Airflow
+Soda Core Postgres 3.5.6 runs in `/home/airflow/soda-venv` to isolate its
+dependencies from Airflow 3.4.0 and its providers. Run scans from Airflow
 tasks using a subprocess with `/home/airflow/soda-venv/bin/soda`, or use the
 `SODA_PYTHON` environment variable for a Python scan script. Importing Soda
 directly into an Airflow task uses the wrong Python environment.

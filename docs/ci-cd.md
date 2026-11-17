@@ -18,12 +18,15 @@ Default local pytest still skips tests requiring Airflow, a live database, or
 into the real PostgreSQL test there, and launches E2E from the host. A successful
 host-only test run is therefore only the first gate.
 
+<<<<<<< HEAD
 The validation job now also scans full fetched Git history with digest-pinned
 Gitleaks and redacts findings before saving the JSON report. Checkouts do not
 persist GitHub credentials in Git configuration. See the
 [repository security review](security-review.md) for scan scope and remaining
 private-repository/attestation limitations.
 
+=======
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
 The E2E test triggers `products_pipeline`, waits for its trigger task, checks
 all seven `products_elt` tasks (including both Soda scans), and verifies the
 processed CSV files. A failing quality gate blocks publishing.
@@ -145,9 +148,14 @@ that have not passed that verification.
 Trivy runs with `--vex ... --show-suppressed`, preserving the reviewed statement
 and its evidence in the artifact and exposing filtered results in JSON. All
 other fixable HIGH/CRITICAL vulnerabilities still fail the gate. No entire
+<<<<<<< HEAD
 package directory, SBOM directory, or scanner is disabled. The subsequent CI
 run passed this policy, as confirmed by the owner on 2026-11-17. Retain and
 review the statement and verification guard when changing pip or the base image.
+=======
+package directory, SBOM directory, or scanner is disabled. The next image build
+and scan must verify these changes; a clean result is not claimed locally.
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
 
 References: [Trivy dpkg analyzer](https://raw.githubusercontent.com/aquasecurity/trivy/v0.76.2/pkg/fanal/analyzer/pkg/dpkg/dpkg.go),
 [pip vendoring report](https://github.com/pypa/pip/issues/14031),
@@ -229,6 +237,7 @@ jobs in GitHub repository settings; workflow code alone does not enforce merges.
 
 ## Verification status
 
+<<<<<<< HEAD
 ### Latest confirmed outcome — 2026-11-17
 
 The project owner confirmed that the latest CI run passed after the dpkg
@@ -248,6 +257,8 @@ locally. Release-tag publishing and provenance are implemented but have not
 been separately confirmed by the owner's success report. No deployment is
 implemented. A release-tag run is the remaining publishing verification step.
 
+=======
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
 ### Stack startup failures versus missing reports
 
 If stack startup fails, DagBag and integration tests never run, so their
@@ -274,8 +285,13 @@ The Linux-only Airflow group now requires `celery[redis]>=5.6.0,<5.7.0`, with
 the exact compatible version in `uv.lock`. Keep this bound until a provider
 release supports the changed backend API. The Dockerfile also imports the
 actual Celery executor during the build, so a recurrence fails before stack
+<<<<<<< HEAD
 startup. This smoke check does not connect to Redis or PostgreSQL; the
 subsequently passing CI run validated worker health and E2E execution too.
+=======
+startup. This smoke check does not connect to Redis or PostgreSQL; CI still
+validates actual worker health and E2E execution afterward.
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
 
 References: [Celery 5.6 backend helper](https://raw.githubusercontent.com/celery/celery/v5.6.0/celery/backends/database/__init__.py)
 and [Celery 5.7 backend](https://raw.githubusercontent.com/celery/celery/v5.7.0/celery/backends/database/__init__.py).
@@ -292,16 +308,26 @@ parent correctly propagated its child's failure.
 
 CI now repairs ownership of the generated output directory and existing files
 before startup, then checks real worker write access before triggering a DAG.
+<<<<<<< HEAD
 This also covers `products_duplicates.csv`. Subsequent E2E runs passed after
 the fix; tests and quality thresholds were not relaxed.
+=======
+This also covers `products_duplicates.csv`. The fix still needs a live CI run
+to confirm end-to-end success; tests and quality thresholds were not relaxed.
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
 
 ### E2E parent failure diagnostics
 
 The next CI run passed DAG validation and database connectivity, then failed
 in `products_pipeline.trigger_products_elt`. The reported parent state alone
 does not identify the cause: the trigger can fail itself or propagate a failed
+<<<<<<< HEAD
 child run. At that point, the underlying task exception was needed to identify
 the cause; later logs established the processed-output permissions problem.
+=======
+child run. The underlying task exception is still needed before attributing
+this failure to a specific component.
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
 
 The E2E failure output now includes task states for both DAGs and the last 60
 lines of each available task log for that run. It also saves
@@ -321,6 +347,7 @@ The first CI DagBag step exposed an Airflow 3.4 API mismatch in the fixture:
 `include_examples` is no longer a constructor argument, and the
 `airflow.models.dagbag` import is deprecated. The fixture now uses
 `airflow.dag_processing.dagbag.DagBag(dag_folder=...)`, matching the pinned
+<<<<<<< HEAD
 Airflow 3.4.0 source. Subsequent CI reports confirmed all DagBag tests passed;
 the earlier failure happened before database/E2E tests.
 
@@ -329,6 +356,20 @@ Python test suite. Live CI subsequently verified the Docker/service paths and
 security gate, as recorded above. The sample CSV produces 51 eligible core
 rows after cleaning. Publishing and deployment must not be inferred from a
 passing PR/main validation run.
+=======
+Airflow 3.4.0 source. Rerun CI with the updated commit to verify DAG loading
+and subsequent gates; the earlier failure happened before database/E2E tests.
+
+The workflow and Compose YAML have been parsed locally, and actionlint validated
+the workflow (shellcheck is provided by its CI container, not the local Windows
+binary). Local verification passed **83 tests, with 5 expected skips**; Ruff
+lint and formatting passed. Tests validate disposable environment generation
+and core cleaning. The sample CSV yields 51 eligible core rows with no blank names or
+negative prices. Docker is unavailable in the current coding session, so image
+builds, the new CI stack, vulnerability results, publishing, and attestations
+still need their first GitHub Actions execution. No images have been published
+by this implementation session.
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
 
 References: [Docker Compose overrides](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/),
 [Compose startup health waits](https://docs.docker.com/reference/cli/docker/compose/up),

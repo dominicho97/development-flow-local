@@ -4,6 +4,14 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -12,6 +20,7 @@ jobs:
   checks:
     name: Tests and lint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
@@ -32,7 +41,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.11.14"
+          version: "0.13.7"
           enable-cache: true
 
       - name: Install Python 3.12
@@ -42,13 +51,14 @@ jobs:
         run: uv sync --locked --dev
 
       - name: Run pytest
-        run: uv run python -m pytest -v
+        run: uv run python -m pytest -v --junitxml=.ci/reports/unit-tests.xml
 
       - name: Run Ruff lint checks
         run: uv run ruff check .
 
       - name: Check Ruff formatting
         run: uv run ruff format --check .
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
 
@@ -56,13 +66,24 @@ jobs:
         run: docker run --rm -v "$PWD:/repo:ro" --workdir /repo rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
 
       - name: Upload unit and redacted secret-scan reports
+=======
+
+      - name: Validate GitHub Actions syntax and shell commands
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
+
+      - name: Upload unit test report
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: unit-test-report-${{ github.sha }}
+<<<<<<< HEAD
           path: |
             .ci/reports/unit-tests.xml
             .ci/reports/secret-scan.json
+=======
+          path: .ci/reports/unit-tests.xml
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
           retention-days: 7
 
   airflow:
@@ -83,7 +104,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+<<<<<<< HEAD
           persist-credentials: false
+=======
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
 
       - name: Set up uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
@@ -300,4 +324,7 @@ jobs:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+<<<<<<< HEAD
 >>>>>>> Stashed changes
+=======
+>>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6

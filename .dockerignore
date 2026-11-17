@@ -1,0 +1,15 @@
+.git
+.venv
+.uv*
+.pytest_cache
+.ruff_cache
+**/__pycache__
+**/*.pyc
+.env
+.env.*
+.aws
+.codex
+.agents
+.ci
+logs
+dataset/processed
