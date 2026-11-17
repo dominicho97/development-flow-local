@@ -155,19 +155,10 @@ jobs:
           uv run pytest tests/test_airflow_e2e.py --run-e2e -v -s \
             --junitxml=.ci/reports/e2e-tests.xml
 
-      - name: Preserve inherited supplier SBOMs
-        # These describe the base before our package upgrades. Keep them as audit
-        # evidence, but do not merge stale versions into the current image scan.
-        run: |
-          docker create --name inherited-sbom-source "$RUNTIME_IMAGE"
-          trap 'docker rm -f inherited-sbom-source >/dev/null 2>&1 || true' EXIT
-          docker cp inherited-sbom-source:/opt/docker/sbom .ci/reports/inherited-base-sbom
-
       - name: Generate runtime SBOM
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$PWD/.ci/reports:/reports" "$TRIVY_IMAGE" image \
-            --skip-dirs opt/docker/sbom \
             --format cyclonedx --output /reports/sbom.cdx.json "$RUNTIME_IMAGE"
 
       - name: Record actual runtime package versions
@@ -200,12 +191,18 @@ jobs:
                             "soda_python": json.loads(soda.stdout)}, indent=2))
           PY
 
+      - name: Verify pip subset before applying reviewed VEX
+        run: |
+          docker run --rm -i --entrypoint python "$RUNTIME_IMAGE" - \
+            < scripts/security/verify_pip_vendoring.py > .ci/reports/pip-vendoring.json
+          cp security/pip-setuptools.openvex.json .ci/reports/pip-setuptools.openvex.json
+
       - name: Gate fixable high and critical image vulnerabilities
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$PWD/.ci/reports:/reports" "$TRIVY_IMAGE" image \
-            --skip-dirs opt/docker/sbom \
             --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL \
+            --vex /reports/pip-setuptools.openvex.json --show-suppressed \
             --format json --output /reports/vulnerabilities.json \
             --exit-code 1 "$RUNTIME_IMAGE"
 

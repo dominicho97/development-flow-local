@@ -34,6 +34,11 @@ RUN apt-get update \
         "$(dpkg-query -W -f='${Version}' zlib1g)" ge '1:1.3.dfsg+really1.3.1-1+deb13u1' \
     && dpkg --compare-versions \
         "$(dpkg-query -W -f='${Version}' zlib1g-dev)" ge '1:1.3.dfsg+really1.3.1-1+deb13u1' \
+    && for package in linux-libc-dev zlib1g zlib1g-dev; do \
+        if [ -f "/var/lib/dpkg/status.d/${package}" ]; then \
+            dpkg-query --status "${package}" > "/var/lib/dpkg/status.d/${package}" || exit 1; \
+        fi; \
+    done \
     && rm -rf /var/lib/apt/lists/*
 
 # Export only runtime dependencies from the committed lockfile.

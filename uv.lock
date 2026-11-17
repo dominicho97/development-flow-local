@@ -760,6 +760,7 @@ airflow = [
     { name = "celery", extra = ["redis"], marker = "sys_platform == 'linux'" },
     { name = "dnspython", marker = "sys_platform == 'linux'" },
     { name = "msgpack", marker = "sys_platform == 'linux'" },
+    { name = "pip", marker = "sys_platform == 'linux'" },
     { name = "urllib3", marker = "sys_platform == 'linux'" },
 ]
 dev = [
@@ -783,6 +784,7 @@ airflow = [
     { name = "celery", extras = ["redis"], marker = "sys_platform == 'linux'", specifier = ">=5.6.0,<5.7.0" },
     { name = "dnspython", marker = "sys_platform == 'linux'", specifier = ">=2.9.2,<3.0.0" },
     { name = "msgpack", marker = "sys_platform == 'linux'", specifier = ">=1.2.3,<2.0.0" },
+    { name = "pip", marker = "sys_platform == 'linux'", specifier = ">=26.3,<27.0.0" },
     { name = "urllib3", marker = "sys_platform == 'linux'", specifier = ">=2.8.0,<3.0.0" },
 ]
 dev = [
@@ -1778,6 +1780,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/9b/3a/52bb241eda386be0e0bb2351de524f7169631806a559c9a1271059b6c5b1/pendulum-3.3.0-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:049306aa696a4999adbfb64434e03dc076ae6807972caef8a3d4f0da213cd837", size = 514421, upload-time = "2026-10-12T20:52:38.915Z" },
     { url = "https://files.pythonhosted.org/packages/f2/48/6d256cf264d6bedd43de44c967a9bb5078969ef640d318465256d8b35c37/pendulum-3.3.0-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:066f8a9d39588d68dd230f8b270978d978289743994360edba780785ff5b5259", size = 554041, upload-time = "2026-10-12T20:52:40.348Z" },
     { url = "https://files.pythonhosted.org/packages/af/d8/2733a7d2533a61bd3f94a996f5ce2a0784d6ed3636dc2d4adb0c1f9fbb0f/pendulum-3.3.0-py3-none-any.whl", hash = "sha256:3a89816a1aaa6f068fe17f30ddd6c5d9a4a8dad62f8612da28c29a8810773fd4", size = 116287, upload-time = "2026-10-12T20:54:10.052Z" },
+]
+
+[[package]]
+name = "pip"
+version = "26.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/c7/f8d9e2e0e7c1ed8a22a10eeb3b5bf7860bc07d8446c7a978a882c5c8214b/pip-26.3.tar.gz", hash = "sha256:6c36ae7da8695be67e3cd9f7d87919667ced53f57ce2ede75d89b5912ed2bc4c", size = 1934348, upload-time = "2026-11-02T20:34:27.738Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/25/ee8c38ae72d66b844ce8eb9711ba905dba21ca1a8a0c960057c41cd23337/pip-26.3-py3-none-any.whl", hash = "sha256:f3b60b20ffaadd4415ed7957212a38ac63fa4c5fa375bd0f4a797777940fad13", size = 1950951, upload-time = "2026-11-02T20:34:25.728Z" },
 ]
 
 [[package]]

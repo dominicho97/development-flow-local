@@ -87,9 +87,10 @@ CI uses disposable credentials.
 Trivy is pinned to a version and digest; GitHub Actions are pinned to commit
 SHAs. Its vulnerability database is fetched at run time, so a new advisory can
 fail an unchanged image. Review the vulnerability report, update the affected
-base image or dependency, and rerun validation. No CVE allowlist is configured.
-The one scan-path exclusion is inherited supplier metadata under
-`opt/docker/sbom`, as explained below. Fixable HIGH/CRITICAL findings in the current image may require
+base image or dependency, and rerun validation. No scan paths are excluded.
+One reviewed OpenVEX statement covers pip's pkg_resources-only setuptools
+inventory, with a fail-closed verification step and visible suppressed results
+as described below. Fixable HIGH/CRITICAL findings in the current image may require
 dependency upgrades before the first green release. The scan covers the
 application runtime image, not every third-party Compose service image.
 
@@ -107,27 +108,44 @@ that real package upgrades were installed and E2E passed, but Trivy retained
 | setuptools | 84.2.1 | 70.3.0 |
 | urllib3 | 2.8.0 | 2.7.0 |
 
-Docker Hardened Images can contain supplier SBOMs under `/opt/docker/sbom`.
-Trivy's embedded-SBOM analyzer imports packages from these files in addition
-to scanning the package database and installed libraries. Those supplier
-inventories describe a base image before our APT and Python upgrades.
+The attempted `/opt/docker/sbom` exclusion did not resolve the next artifact,
+`4b35dc546357a1701ce31566a236bb3374f81868`. It was an incorrect source
+attribution and has been removed. Read-only inspection of the exact public
+base image layers established two distinct causes:
 
-CI now copies that directory from the exact runtime image into the artifact's
-`inherited-base-sbom` folder, then applies `--skip-dirs opt/docker/sbom` to
-both fresh SBOM generation and vulnerability scanning. Copy failure fails the
-step rather than silently assuming the metadata is present. Supplier evidence
-stays in the artifact and image; it is not merged into the current runtime
-inventory. This exclusion does not cover dpkg status, installed Python metadata,
-application libraries, or bundled binaries. OS and language scanners remain
-enabled, and fixable HIGH/CRITICAL findings still return exit code 1.
+- DHI retains original `/var/lib/dpkg/status.d/linux-libc-dev`, `zlib1g`, and
+  `zlib1g-dev` records alongside the canonical `/var/lib/dpkg/status` that APT
+  updates. Trivy reads both locations. After upgrades and minimum checks, the
+  Dockerfile now rewrites only those existing fragments from `dpkg-query
+  --status`, preserving accurate metadata rather than hiding it.
+- Pip bundles its own msgpack and urllib3. Updating top-level distributions
+  does not update these copies. The Linux Airflow group now requires pip
+  >=26.3,<27, resolving to 26.3 with bundled msgpack 1.2.4 and urllib3 2.8.0.
 
-The stale-inventory diagnosis is supported by the version mismatch and scanner
-behavior; the next CI run must confirm this exact directory accounts for the
-remaining findings. Do not broaden the exclusion if another finding remains.
-Inspect its actual package path and inventory source first.
+Pip 26.3's vendor BOM also names setuptools 70.3.0, but pip ships only its
+`pkg_resources` subset, not `setuptools.package_index`, the module affected by
+CVE-2025-47273. The actual full setuptools distribution is patched. The file
+`security/pip-setuptools.openvex.json` records `vulnerable_code_not_present`
+for exactly that CVE and `pkg:pypi/setuptools@70.3.0`.
 
-References: [Docker's embedded SBOM location](https://www.docker.com/blog/docker-hardened-images-enhanced-vulnerability-scanning-with-docker-and-aikido/)
-and [Trivy's embedded SBOM analyzer](https://raw.githubusercontent.com/aquasecurity/trivy/v0.76.2/pkg/fanal/analyzer/sbom/sbom.go).
+Before supplying that VEX statement to Trivy, CI runs
+`scripts/security/verify_pip_vendoring.py` inside the release image. It checks
+known Python installation roots for vulnerable full setuptools distributions,
+rejects unpatched bundled msgpack/urllib3 or unexpected vendored setuptools
+code, and verifies the reviewed pkg_resources subset. A changed or missing
+vendor inventory fails the step. This statement must not be reused for images
+that have not passed that verification.
+
+Trivy runs with `--vex ... --show-suppressed`, preserving the reviewed statement
+and its evidence in the artifact and exposing filtered results in JSON. All
+other fixable HIGH/CRITICAL vulnerabilities still fail the gate. No entire
+package directory, SBOM directory, or scanner is disabled. The next image build
+and scan must verify these changes; a clean result is not claimed locally.
+
+References: [Trivy dpkg analyzer](https://raw.githubusercontent.com/aquasecurity/trivy/v0.76.2/pkg/fanal/analyzer/pkg/dpkg/dpkg.go),
+[pip vendoring report](https://github.com/pypa/pip/issues/14031),
+[setuptools advisory](https://github.com/pypa/setuptools/security/advisories/GHSA-5rjg-fvgr-3xxf),
+and [Trivy local VEX support](https://trivy.dev/docs/latest/supply-chain/vex/file/).
 
 The first vulnerability gate reported CVE-2026-98466 against the inherited
 `linux-libc-dev` package at `6.12.115-2+dhi0`. Debian lists `6.12.117-1` as the
