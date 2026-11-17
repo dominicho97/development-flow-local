@@ -123,6 +123,13 @@ jobs in GitHub repository settings; workflow code alone does not enforce merges.
 
 ## Verification status
 
+The first CI DagBag step exposed an Airflow 3.4 API mismatch in the fixture:
+`include_examples` is no longer a constructor argument, and the
+`airflow.models.dagbag` import is deprecated. The fixture now uses
+`airflow.dag_processing.dagbag.DagBag(dag_folder=...)`, matching the pinned
+Airflow 3.4.0 source. Rerun CI with the updated commit to verify DAG loading
+and subsequent gates; the earlier failure happened before database/E2E tests.
+
 The workflow and Compose YAML have been parsed locally, and actionlint validated
 the workflow (shellcheck is provided by its CI container, not the local Windows
 binary). Local verification passed **83 tests, with 5 expected skips**; Ruff

@@ -112,9 +112,11 @@ uv run python -m pytest tests -q
 ```
 
 Use `tests` explicitly to avoid collecting generated Airflow log directories.
-The `dagbag` fixture in `conftest.py` loads repository DAGs with examples
-disabled and adds the repository and DAG directories to the test import path.
-It imports the correctly capitalized `DagBag` class inside the fixture, so
+The `dagbag` fixture in `conftest.py` scans the explicit repository `dags/`
+folder and adds the repository and DAG directories to the test import path.
+For Airflow 3.4 it imports `DagBag` from `airflow.dag_processing.dagbag` and
+calls `DagBag(dag_folder=...)`; the old `include_examples` argument has been
+removed. It imports the class inside the fixture, so
 collecting ordinary unit tests does not require Airflow.
 
 `test_dag_integrity` verifies all of the following:

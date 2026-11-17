@@ -37,7 +37,7 @@ def dagbag(monkeypatch):
     # Local unit tests do not require Airflow. Only tests requesting this fixture
     # are skipped if Airflow is unavailable; the rest of the suite still runs.
     pytest.importorskip("airflow", reason="DagBag tests require Airflow")
-    from airflow.models.dagbag import DagBag
+    from airflow.dag_processing.dagbag import DagBag
 
     project_root = Path(__file__).resolve().parents[1]
     dags_folder = project_root / "dags"
@@ -46,8 +46,9 @@ def dagbag(monkeypatch):
     monkeypatch.syspath_prepend(str(project_root))
     monkeypatch.syspath_prepend(str(dags_folder))
     # Parse our DAG files and collect their task definitions and import errors.
-    # Exclude Airflow's example DAGs. Loading does not execute our task bodies.
-    return DagBag(dag_folder=str(dags_folder), include_examples=False)
+    # Airflow 3.4 scans this explicit folder; include_examples was removed.
+    # Loading does not execute our task bodies.
+    return DagBag(dag_folder=str(dags_folder))
 
 
 @pytest.fixture
