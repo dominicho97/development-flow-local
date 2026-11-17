@@ -167,6 +167,19 @@ jobs in GitHub repository settings; workflow code alone does not enforce merges.
 
 ## Verification status
 
+### Stack startup failures versus missing reports
+
+If stack startup fails, DagBag and integration tests never run, so their
+`/tmp/dag-tests.xml` and `/tmp/integration-tests.xml` files do not exist.
+Missing-file messages during diagnostic collection are secondary; they do not
+identify why Airflow failed to start. CI now prints container status plus
+PostgreSQL/init/API/scheduler/DAG-processor/worker log tails directly in the
+failed startup step. Cleanup reports unavailable XML files without emitting
+misleading Docker copy errors. Use the first service exception or healthcheck
+failure to diagnose startup. The startup issue reported after the slim-image
+change remains unconfirmed until those logs are available; no provider or
+healthcheck changes have been guessed from missing report files alone.
+
 ### E2E processed-output permissions fix
 
 The task log identified the parent run's underlying failure: `transform`
