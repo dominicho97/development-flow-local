@@ -67,14 +67,6 @@ the current scope. See [CI and releases](docs/ci-cd.md) for verification details
 - Python 3.12
 - [uv](https://docs.astral.sh/uv/)
 
-## Setup
-
-From the repository root:
-
-```powershell
-uv sync --locked
-uv run pytest -q
-```
 
 For the local Airflow stack, follow the [Docker and Airflow guide](docs/development.md#docker-and-airflow).
 Once running, open `http://localhost:8080`, unpause both product DAGs, and
