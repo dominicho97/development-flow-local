@@ -40,51 +40,27 @@ It combines data ingestion, transformation, orchestration, quality assurance, an
 
 
 
-## Workflow
+## Data flow
 
-The pipeline ingests a product CSV, preserves raw observations in PostgreSQL
-staging, and loads cleaned, deduplicated products into core. Airflow coordinates
-the work; Soda validates both database layers.
+```mermaid
+flowchart LR
+    A[Raw product CSV] --> B[PostgreSQL staging]
+    B --> C[Staging quality checks]
+    C -- gates --> D[Python transformation]
+    A --> D
+    D --> E[PostgreSQL core]
+    E --> F[Core quality checks]
+```
 
-### Project status
+Airflow coordinates the flow and Soda checks both database layers. Staging
+preserves raw observations; transformation reads the CSV, cleans and
+deduplicates it, then loads core after the staging checks pass.
+
+## Project status
 
 The CI validation pipeline has passed, including the end-to-end run and image
 security gate. Versioned image publishing is configured; deployment is outside
 the current scope. See [CI and releases](docs/ci-cd.md) for verification details.
-
-### Development and release cycle
-
-```mermaid
-flowchart LR
-    A[Issue] --> B[Branch and implement]
-    B --> C[Local tests]
-    C --> D[Pull request]
-    D --> E[CI validation]
-    E --> F[Review and merge]
-    F --> G[Version tag]
-    G --> H[Validate tagged commit]
-    H --> I[Publish image to GHCR]
-    E -- Failure --> B
-    H -- Failure --> B
-```
-
-CI checks tests and lint, builds the runtime image, validates Airflow and
-PostgreSQL, runs the pipeline end to end, and scans the image for security
-findings. Publishing uses the validated image after a successful version-tag
-run. See the [pipeline guide](docs/ci-cd.md) for the gates and release steps.
-
-## What we learned
-
-- Working code is only the start: reproducible environments, review, testing,
-  and container builds make changes dependable.
-- Unit tests, real service integration, and end-to-end runs catch different
-  problems. A passing unit suite alone cannot validate an Airflow deployment.
-- Data quality rules need explicit business decisions. Preserve raw evidence,
-  handle invalid records deliberately, and fail the pipeline on violated rules.
-- Dependency resolution does not guarantee runtime compatibility. Test the
-  imports and execution paths the application actually uses.
-- Security findings need investigation: update real vulnerable dependencies,
-  reconcile stale inventories, and document narrowly verified exceptions.
 
 ## Requirements
 

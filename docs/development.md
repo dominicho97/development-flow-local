@@ -286,6 +286,23 @@ The test uses Airflow's documented [CLI trigger and task-state commands](https:/
 
 ## Git workflow
 
+Changes follow an issue, branch, implementation, local tests, pull request, CI,
+review, and merge. A version tag starts a fresh validation run before the
+validated image can be published; see [CI and releases](ci-cd.md).
+
+### Lessons learned
+
+- Reproducible environments, review, testing, and container builds make changes
+  dependable beyond the implementation itself.
+- Unit, integration, and end-to-end tests catch different problems; test the
+  actual runtime imports and execution paths as well as dependency resolution.
+- Preserve raw evidence, make data quality decisions explicit, and propagate
+  quality failures through the pipeline.
+- Investigate security findings, update vulnerable dependencies, reconcile
+  stale inventories, and document narrowly verified exceptions.
+
+### Working with branches
+
 Use a feature branch based on the latest `main` for a change:
 
 ```powershell
