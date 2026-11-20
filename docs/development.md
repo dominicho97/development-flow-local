@@ -21,6 +21,25 @@ uv add --dev <package>
 
 ## Local checks
 
+### Using the cleaning functions
+
+Start the uv-managed Python REPL with `uv run python`, then run:
+
+```python
+from src.ingestion import load_products
+from src.transformation import clean_products, deduplicate_products
+
+raw = load_products("dataset/raw/products.csv")
+cleaned = clean_products(raw)
+latest, duplicates = deduplicate_products(cleaned)
+print(f"Loaded: {len(raw)}; latest: {len(latest)}; duplicates: {len(duplicates)}")
+```
+
+Run this Python code in the REPL or save it as a script and use
+`uv run python path\to\your_script.py`. `clean_products()` returns a new
+dataframe. These functions do not persist output files; duplicate observations
+are returned separately for audit.
+
 ### Configuration-driven CSV loading
 
 `dags/datawarehouse/data_loading.py` can load the raw CSV using a JSON
