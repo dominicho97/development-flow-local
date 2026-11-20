@@ -13,11 +13,12 @@ It combines data ingestion, transformation, orchestration, quality assurance, an
 
 
 
+<details>
+<summary><strong>📊 Executive Summary — Business Value & Impact</strong></summary>
+<br>
 
-
-## Executive Summary
 <img width="599" height="334" alt="image" src="https://github.com/user-attachments/assets/702b90c0-7884-4b85-9c90-d025602460c4" />
-
+</details>
 
 ## Technical summary
 <img width="600" height="332" alt="image" src="https://github.com/user-attachments/assets/538f3064-5e48-404c-a1ce-a84e599cb8e1" />
