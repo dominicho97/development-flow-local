@@ -23,7 +23,6 @@ It combines data ingestion, transformation, orchestration, quality assurance, an
 - **CI/CD & Security:** Uses GitHub Actions for automated validation, container builds, vulnerability scanning, and versioned image publishing workflows.
 - **Containerization:** Runs the pipeline with Docker Compose for reproducible local development.
 
-- 
 ## Technologies Used
 
 | Component | Technologies |
