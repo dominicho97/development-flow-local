@@ -311,7 +311,8 @@ before startup, then checks real worker write access before triggering a DAG.
 <<<<<<< HEAD
 This also covers `products_duplicates.csv`. Subsequent E2E runs passed after
 the fix; tests and quality thresholds were not relaxed.
-=======
+
+----
 This also covers `products_duplicates.csv`. The fix still needs a live CI run
 to confirm end-to-end success; tests and quality thresholds were not relaxed.
 >>>>>>> 1f6b29a3ec5764250744804fef9be0c656b466c6
@@ -356,6 +357,8 @@ Python test suite. Live CI subsequently verified the Docker/service paths and
 security gate, as recorded above. The sample CSV produces 51 eligible core
 rows after cleaning. Publishing and deployment must not be inferred from a
 passing PR/main validation run.
+
+
 =======
 Airflow 3.4.0 source. Rerun CI with the updated commit to verify DAG loading
 and subsequent gates; the earlier failure happened before database/E2E tests.
