@@ -1,5 +1,6 @@
 # Development Flow — From Code to Production
 
+Built a production-grade retail data pipeline with Airflow orchestration, PostgreSQL, automated data quality checks, and CI/CD.
 A hands-on data engineering project for learning how software becomes reliable,
 testable, and ready to release through a professional development workflow.
 
