@@ -22,6 +22,7 @@ It combines data ingestion, transformation, orchestration, quality assurance, an
 - **Automated Testing:** Validates Python logic, database integration, and end-to-end pipeline execution.
 - **CI/CD & Security:** Uses GitHub Actions for automated validation, container builds, vulnerability scanning, and versioned image publishing workflows.
 - **Containerization:** Runs the pipeline with Docker Compose for reproducible local development.
+- **CSV ingestion:** Validates required columns and provides a command-line preview of the default dataset.
 
 ## Technologies Used
 
@@ -39,8 +40,7 @@ It combines data ingestion, transformation, orchestration, quality assurance, an
 
 
 
-## workflow
-**Issue → Branch → Implementation → Tests → Pull Request → CI → Review → Merge**
+## Workflow
 
 The pipeline ingests a product CSV, preserves raw observations in PostgreSQL
 staging, and loads cleaned, deduplicated products into core. Airflow coordinates
@@ -86,19 +86,6 @@ run. See the [pipeline guide](docs/ci-cd.md) for the gates and release steps.
 - Security findings need investigation: update real vulnerable dependencies,
   reconcile stale inventories, and document narrowly verified exceptions.
 
-## Current capabilities
-
-- Load UTF-8 CSV files as strings and validate required ingestion columns.
-- Preview the default product dataset from the command line.
-- Normalize product text, categories, prices, stock, dates, countries,
-  currencies, and active-status values.
-- Select the latest observation for duplicate SKUs while returning duplicate
-  rows for audit.
-- Run Soda quality gates after staging and core loads: seven staging checks
-  and 11 core checks covering schema, completeness, uniqueness, and validity.
-- Validate code, Docker builds, Airflow DAGs, PostgreSQL, and full pipeline runs
-  in GitHub Actions, with image vulnerability gates and version-tag publishing.
-
 ## Requirements
 
 - Python 3.12
@@ -119,19 +106,9 @@ trigger **`products_pipeline`**.
 
 ## Documentation
 
-<<<<<<< HEAD
 - [Architecture](docs/architecture.md) — pipeline and module roles
 - [Data cleaning](docs/data-cleaning.md) and [data quality](docs/data-quality.md)
 - [Development and testing](docs/development.md) — Python usage, Docker, Airflow, and tests
 - [CI and releases](docs/ci-cd.md) — validation, security gates, and publishing
 - [Security review](docs/security-review.md)
 - [Agent handover](docs/agent-handover.md)
-=======
-- [Architecture](docs/architecture.md) — implemented pipeline and module roles
-- [Data cleaning](docs/data-cleaning.md) — transformation rules and limitations
-- [Data quality](docs/data-quality.md) — Soda setup, scan commands, checks, and known failures
-- [Development](docs/development.md) — workflow, checks, and CI
-- [CI and releases](docs/ci-cd.md) — full Airflow validation, security gates, and versioned image publishing
-
-
->>>>>>> 90b1a7f2c023b59e7ed70ff46b89bc5cdb23ce99
