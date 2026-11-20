@@ -58,9 +58,28 @@ deduplicates it, then loads core after the staging checks pass.
 
 ## Project status
 
-The CI validation pipeline has passed, including the end-to-end run and image
-security gate. Versioned image publishing is configured; deployment is outside
-the current scope. See [CI and releases](docs/ci-cd.md) for verification details.
+✅ **CI validation passed** in the run reported on 2026-11-17, including the
+end-to-end pipeline and image security gate.
+
+```mermaid
+flowchart LR
+    A[Tests and lint] --> B[Runtime image build]
+    B --> C[Airflow and PostgreSQL checks]
+    C --> D[End-to-end pipeline and Soda checks]
+    D --> E[Image security scan]
+    E --> F[Version-tag image publishing configured]
+    F -.-> G[Deployment outside current scope]
+    classDef passed fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef configured fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a
+    classDef outside fill:#f3f4f6,stroke:#9ca3af,color:#374151
+    class A,B,C,D,E passed
+    class F configured
+    class G outside
+```
+
+Publishing is configured for successful version-tag runs but was not separately
+confirmed in that report. Deployment is not implemented. See [CI and releases](docs/ci-cd.md)
+for verification details.
 
 ## Requirements
 
