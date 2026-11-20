@@ -361,8 +361,9 @@ for configuration, release commands, prerequisites, and verification status.
 ## Docker and Airflow
 
 Local host ports bind to loopback only: Airflow is at `127.0.0.1:8080` and
-PostgreSQL at `127.0.0.1:5432`. Recreate existing containers to apply changed
-bindings. See the [security review](security-review.md) before exposing the
+PostgreSQL at `127.0.0.1:5433` by default. Set `POSTGRES_HOST_PORT` in `.env`
+to change the host port; container connections continue to use port 5432.
+Recreate existing containers to apply changed bindings. See the [security review](security-review.md) before exposing the
 stack or changing repository visibility.
 
 For the current Soda setup, the 11 PostgreSQL checks, scan commands, and known
