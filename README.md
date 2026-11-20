@@ -4,7 +4,8 @@ Built a production-grade retail data pipeline with Airflow orchestration, Postgr
 A hands-on data engineering project for learning how software becomes reliable,
 testable, and ready to release through a professional development workflow.
 
-<img width="600" height="331" alt="image" src="https://github.com/user-attachments/assets/52afceb5-0602-443e-aa84-e2a9f36656e6" />
+<img width="599" height="334" alt="image" src="https://github.com/user-attachments/assets/702b90c0-7884-4b85-9c90-d025602460c4" />
+
 
 
 
