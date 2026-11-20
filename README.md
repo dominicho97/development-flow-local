@@ -216,6 +216,7 @@ The core scan reported 9 of
 11 checks passing, with one blank product name and one negative price requiring
 investigation. Soda now runs automatically after each warehouse layer loads;
 validation-issue reporting remains future work.
+
 =======
 - [Architecture](docs/architecture.md)
 - [Cleaning rules](docs/data-cleaning.md) and [data quality](docs/data-quality.md)
