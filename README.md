@@ -86,15 +86,6 @@ run. See the [pipeline guide](docs/ci-cd.md) for the gates and release steps.
 - Security findings need investigation: update real vulnerable dependencies,
   reconcile stale inventories, and document narrowly verified exceptions.
 
-## Get started
-
-<<<<<<< Updated upstream
-The goal isn't simply to build a working ETL pipeline. It's to understand **how software evolves from a local implementation into a reliable, testable and maintainable system**.
-
-Each feature is developed through a dedicated issue and branch, validated with automated tests, reviewed through a Pull Request and integrated into the main codebase.
-
-The repository documents both the technical implementation and the engineering practices used throughout the development process.
-
 ## Current capabilities
 
 - Load UTF-8 CSV files as strings and validate required ingestion columns.
