@@ -104,6 +104,7 @@ trigger **`products_pipeline`**.
 
 ## Project Snapshots
 <img width="692" height="263" alt="image" src="https://github.com/user-attachments/assets/70ce8fb2-0d2b-4e7d-b4f3-fd68fe28cbf4" />
+
 ### Automated tests
 <img width="797" height="67" alt="image" src="https://github.com/user-attachments/assets/c745ad68-b335-42d9-9a2b-5f2b629ac309" />
 
