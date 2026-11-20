@@ -119,7 +119,6 @@ trigger **`products_pipeline`**.
 
 ## Documentation
 
-<<<<<<< HEAD
 - [Architecture](docs/architecture.md) — pipeline and module roles
 - [Data cleaning](docs/data-cleaning.md) and [data quality](docs/data-quality.md)
 - [Development and testing](docs/development.md) — Python usage, Docker, Airflow, and tests
@@ -134,4 +133,3 @@ trigger **`products_pipeline`**.
 - [CI and releases](docs/ci-cd.md) — full Airflow validation, security gates, and versioned image publishing
 
 
->>>>>>> 90b1a7f2c023b59e7ed70ff46b89bc5cdb23ce99
