@@ -39,7 +39,7 @@ It combines data ingestion, transformation, orchestration, quality assurance, an
 
 
 
-##workflow
+## workflow
 **Issue → Branch → Implementation → Tests → Pull Request → CI → Review → Merge**
 
 The pipeline ingests a product CSV, preserves raw observations in PostgreSQL
