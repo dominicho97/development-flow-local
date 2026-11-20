@@ -10,11 +10,37 @@ This project demonstrates how raw, inconsistent retail product data can be trans
 It combines data ingestion, transformation, orchestration, quality assurance, and software delivery practices in a reproducible environment.
 
 
-## Technical Architecture
+## Technical summary
 <img width="600" height="332" alt="image" src="https://github.com/user-attachments/assets/538f3064-5e48-404c-a1ce-a84e599cb8e1" />
 
 
+## Key Features
 
+- **Automated Data Pipeline:** Orchestrates ingestion, transformation, and database loading using Apache Airflow.
+- **Data Transformation:** Standardizes product attributes and resolves duplicate SKUs while retaining audit records.
+- **Data Quality Assurance:** Implements 18 Soda checks across PostgreSQL staging and core layers.
+- **Automated Testing:** Validates Python logic, database integration, and end-to-end pipeline execution.
+- **CI/CD & Security:** Uses GitHub Actions for automated validation, container builds, vulnerability scanning, and versioned image publishing workflows.
+- **Containerization:** Runs the pipeline with Docker Compose for reproducible local development.
+
+- 
+## Technologies Used
+
+| Component | Technologies |
+|---|---|
+| Programming & Transformation | Python, pandas |
+| Orchestration | Apache Airflow |
+| Data Storage | PostgreSQL |
+| Data Quality | Soda |
+| Containerization | Docker, Docker Compose |
+| Testing | pytest |
+| CI/CD & Security | GitHub Actions, Ruff, Trivy |
+| Dependency Management | uv |
+
+
+
+
+##workflow
 **Issue → Branch → Implementation → Tests → Pull Request → CI → Review → Merge**
 
 The pipeline ingests a product CSV, preserves raw observations in PostgreSQL
