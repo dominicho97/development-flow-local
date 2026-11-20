@@ -1,4 +1,4 @@
-# Development Flow — From Code to Production
+# Retail Data Pipeline
 
 A production-oriented, end-to-end retail data pipeline built with Python, Apache Airflow, PostgreSQL, and Docker, featuring automated data quality controls and CI/CD validation.
 
