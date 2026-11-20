@@ -5,7 +5,8 @@ A **production-oriented, end-to-end retail data pipeline** built with Python, Ap
 This project demonstrates how raw, inconsistent retail products data can be transformed into reliable, analytics-ready datasets through an automated data engineering workflow.
 It combines data ingestion, transformation, orchestration, quality assurance, and software delivery practices in a reproducible environment.
 
-<img width="650" height="334" alt="image" src="https://github.com/user-attachments/assets/e329a8de-b883-4442-985d-a89e06037b3c" />
+<img width="1754" height="896" alt="image" src="https://github.com/user-attachments/assets/85eb82fc-8fd6-4a39-9cb7-993aed6782bf" />
+
 
 
 ## Executive Summary
