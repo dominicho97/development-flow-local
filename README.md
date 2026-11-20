@@ -9,9 +9,32 @@ The pipeline ingests a product CSV, preserves raw observations in PostgreSQL
 staging, and loads cleaned, deduplicated products into core. Airflow coordinates
 the work; Soda validates both database layers.
 
-**Status:** the full CI validation pipeline, including end-to-end execution and
-the image security gate, has passed. Versioned image publishing is configured;
-deployment is intentionally outside the current scope.
+### Project status
+
+The CI validation pipeline has passed, including the end-to-end run and image
+security gate. Versioned image publishing is configured; deployment is outside
+the current scope. See [CI and releases](docs/ci-cd.md) for verification details.
+
+### Development and release cycle
+
+```mermaid
+flowchart LR
+    A[Issue] --> B[Branch and implement]
+    B --> C[Local tests]
+    C --> D[Pull request]
+    D --> E[CI validation]
+    E --> F[Review and merge]
+    F --> G[Version tag]
+    G --> H[Validate tagged commit]
+    H --> I[Publish image to GHCR]
+    E -- Failure --> B
+    H -- Failure --> B
+```
+
+CI checks tests and lint, builds the runtime image, validates Airflow and
+PostgreSQL, runs the pipeline end to end, and scans the image for security
+findings. Publishing uses the validated image after a successful version-tag
+run. See the [pipeline guide](docs/ci-cd.md) for the gates and release steps.
 
 ## What we learned
 
