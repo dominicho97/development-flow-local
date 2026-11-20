@@ -1,8 +1,8 @@
 # Retail Data Pipeline
 
-A production-oriented, end-to-end retail data pipeline built with Python, Apache Airflow, PostgreSQL, and Docker, featuring automated data quality controls and CI/CD validation.
+A **production-oriented, end-to-end retail data pipeline** built with Python, Apache Airflow, PostgreSQL, and Docker, featuring automated data quality controls and CI/CD validation.
 
-Overview
+## Overview
 
 This project demonstrates how raw, inconsistent retail product data can be transformed into reliable, analytics-ready datasets through an automated data engineering workflow.
 
