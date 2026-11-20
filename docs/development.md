@@ -290,6 +290,20 @@ Changes follow an issue, branch, implementation, local tests, pull request, CI,
 review, and merge. A version tag starts a fresh validation run before the
 validated image can be published; see [CI and releases](ci-cd.md).
 
+```mermaid
+flowchart LR
+    A[Issue] --> B[Branch and implement]
+    B --> C[Local tests]
+    C --> D[Pull request]
+    D --> E[CI validation]
+    E --> F[Review and merge]
+    F --> G[Version tag]
+    G --> H[Validate tagged commit]
+    H --> I[Publish validated image to GHCR]
+    E -- Failure --> B
+    H -- Failure --> B
+```
+
 ### Lessons learned
 
 - Reproducible environments, review, testing, and container builds make changes
