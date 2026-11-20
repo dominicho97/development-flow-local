@@ -2,18 +2,15 @@
 
 A **production-oriented, end-to-end retail data pipeline** built with Python, Apache Airflow, PostgreSQL, and Docker, featuring automated data quality controls and CI/CD validation.
 
-## Overview
-
-This project demonstrates how raw, inconsistent retail product data can be transformed into reliable, analytics-ready datasets through an automated data engineering workflow.
-
-It combines data ingestion, transformation, orchestration, quality assurance, and software delivery practices in a reproducible environment.
-
+## Executive Summary
 <img width="599" height="334" alt="image" src="https://github.com/user-attachments/assets/702b90c0-7884-4b85-9c90-d025602460c4" />
 
+## Overview
+This project demonstrates how raw, inconsistent retail product data can be transformed into reliable, analytics-ready datasets through an automated data engineering workflow.
+It combines data ingestion, transformation, orchestration, quality assurance, and software delivery practices in a reproducible environment.
 
 
-
-
+## Technical Architecture
 <img width="600" height="332" alt="image" src="https://github.com/user-attachments/assets/538f3064-5e48-404c-a1ce-a84e599cb8e1" />
 
 
