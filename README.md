@@ -8,7 +8,8 @@ It combines data ingestion, transformation, orchestration, quality assurance, an
 
 ## Business overview
 
-<img width="431" height="226" alt="image" src="https://github.com/user-attachments/assets/ac0bc8de-8cfb-4fee-a379-9851d9a731d8" />
+<img width="652" height="347" alt="image" src="https://github.com/user-attachments/assets/695061f4-8739-4fd2-864b-38389c099c72" />
+
 
 
 
