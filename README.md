@@ -7,6 +7,11 @@ testable, and ready to release through a professional development workflow.
 <img width="577" height="325" alt="image" src="https://github.com/user-attachments/assets/852c6c94-680d-4f46-9777-37569a275a40" />
 
 
+
+<img width="600" height="332" alt="image" src="https://github.com/user-attachments/assets/538f3064-5e48-404c-a1ce-a84e599cb8e1" />
+
+
+
 **Issue → Branch → Implementation → Tests → Pull Request → CI → Review → Merge**
 
 The pipeline ingests a product CSV, preserves raw observations in PostgreSQL
